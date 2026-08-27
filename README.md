@@ -46,10 +46,13 @@ These layouts demonstrate the navigation expected for each role. Actual security
 ## Testing a page
 
 A Next.js page can be tested even when it is not connected to the landing page or navigation. Start the development server with npm run dev or npm.cmd run dev, then enter the page’s route directly in the browser.
+
 For example:
 app/(observer)/report-a-reef/location/page.tsx
+
 can be opened at:
 http://localhost:3000/report-a-reef/location
+
 Folders in parentheses, such as (observer), organise the project but are not included in the URL. The filename page.tsx is also omitted.
 If a file is only a reusable component inside features/ or components/, it will not have its own URL. Import the component into an appropriate page.tsx file before testing it.
 
