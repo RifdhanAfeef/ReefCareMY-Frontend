@@ -1,7 +1,5 @@
 # ReefCare MY frontend skeleton
 
-A shared Next.js App Router starter for the ReefCare MY frontend team. It provides the approved light visual theme, reusable navigation and footer, role-specific route groups, placeholder pages for the current Iteration 1 epics, and a shared API helper.
-
 ## Start locally
 
 Requirements: Node.js 20.9 or newer and npm.
