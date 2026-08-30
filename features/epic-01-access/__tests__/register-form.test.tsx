@@ -1,0 +1,208 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { AuthProvider, useAuth } from "../auth-context";
+import { RegisterForm } from "../register-form";
+import * as authApi from "@/lib/api/authApi";
+
+// authApi.register()/login() now make real network calls against the
+// deployed backend — keep the real MIN/MAX_* constants (register-form.tsx
+// reads them for its own validation) but replace the two network calls.
+vi.mock("@/lib/api/authApi", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api/authApi")>();
+  return { ...actual, login: vi.fn(), register: vi.fn() };
+});
+const mockedLogin = vi.mocked(authApi.login);
+const mockedRegister = vi.mocked(authApi.register);
+
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, replace: vi.fn() }),
+}));
+
+function SignedInUser() {
+  const { user } = useAuth();
+  return <p>Signed in as {user?.displayName ?? "nobody"}</p>;
+}
+
+const VALID_PASSWORD = "correct-horse-battery"; // 22 chars, within 12–128
+
+beforeEach(() => {
+  push.mockClear();
+  mockedLogin.mockReset();
+  mockedRegister.mockReset();
+  window.localStorage.clear();
+});
+
+function renderForm() {
+  render(
+    <AuthProvider>
+      <RegisterForm />
+      <SignedInUser />
+    </AuthProvider>,
+  );
+}
+
+async function fillForm(
+  user: ReturnType<typeof userEvent.setup>,
+  overrides: Partial<{ displayName: string; email: string; password: string }> = {},
+) {
+  const values = {
+    displayName: "Sam Observer",
+    email: "observer@example.org",
+    password: VALID_PASSWORD,
+    ...overrides,
+  };
+
+  if (values.displayName) {
+    await user.type(screen.getByLabelText("Display name"), values.displayName);
+  }
+  if (values.email) {
+    await user.type(screen.getByLabelText("Email"), values.email);
+  }
+  if (values.password) {
+    await user.type(screen.getByLabelText("Password"), values.password);
+  }
+}
+
+// Backend contract (RegistrationCreate schema): email must be a valid
+// address, displayName 1–100 chars, password 12–128 chars. The frontend
+// must not rely solely on the backend's 422 for any of these.
+describe("Register — submission is disabled for invalid input", () => {
+  it("disables the submit button while the password is shorter than 12 characters", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user, { password: "short" });
+
+    expect(screen.getByRole("button", { name: /create account/i })).toBeDisabled();
+  });
+
+  it("disables the submit button while a required field is empty", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user, { displayName: "" });
+
+    expect(screen.getByRole("button", { name: /create account/i })).toBeDisabled();
+  });
+
+  it("disables the submit button for a malformed email address", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user, { email: "not-an-email" });
+
+    expect(screen.getByRole("button", { name: /create account/i })).toBeDisabled();
+  });
+
+  it("enables the submit button once every field is valid", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user);
+
+    expect(screen.getByRole("button", { name: /create account/i })).toBeEnabled();
+  });
+});
+
+describe("Register — no role selection is offered", () => {
+  it("renders no role-related control; new accounts are always observer", () => {
+    renderForm();
+
+    expect(screen.queryByLabelText(/role/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+});
+
+describe("Register — button shows a loading state while submitting", () => {
+  it("disables the button and swaps its label during submission", async () => {
+    let resolveRegister!: (value: Awaited<ReturnType<typeof authApi.register>>) => void;
+    mockedRegister.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRegister = resolve;
+      }),
+    );
+
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user);
+
+    const button = screen.getByRole("button", { name: /create account/i });
+    await user.click(button);
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent(/creating account/i);
+
+    // Let the mocked request settle so it can't leak into a later test —
+    // this render is never unmounted here.
+    resolveRegister({
+      id: 1,
+      email: "observer@example.org",
+      displayName: "Sam Observer",
+      role: "observer",
+    });
+    mockedLogin.mockResolvedValue({
+      accessToken: "tok-abc",
+      tokenType: "bearer",
+      expiresIn: 3600,
+      user: { id: 1, displayName: "Sam Observer", role: "observer" },
+    });
+    await screen.findByText("Signed in as Sam Observer");
+  });
+});
+
+// Registration and sign-in are two independent requests: the register
+// response carries no session (authApi.ts), so a real, separate login()
+// call is what actually starts the session and lands the observer inside.
+describe("Register — success registers the account, then signs the observer in", () => {
+  it("calls register() and login() as two separate requests and navigates in", async () => {
+    mockedRegister.mockResolvedValue({
+      id: 1,
+      email: "observer@example.org",
+      displayName: "Sam Observer",
+      role: "observer",
+    });
+    mockedLogin.mockResolvedValue({
+      accessToken: "tok-abc",
+      tokenType: "bearer",
+      expiresIn: 3600,
+      user: { id: 1, displayName: "Sam Observer", role: "observer" },
+    });
+
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user);
+
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(await screen.findByText("Signed in as Sam Observer")).toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith("/my-reports");
+
+    expect(mockedRegister).toHaveBeenCalledTimes(1);
+    expect(mockedLogin).toHaveBeenCalledTimes(1);
+    expect(mockedLogin).toHaveBeenCalledWith("observer@example.org", VALID_PASSWORD);
+
+    // The register request must never include a role field.
+    const registerPayload = mockedRegister.mock.calls[0][0];
+    expect(registerPayload).not.toHaveProperty("role");
+  });
+});
+
+describe("Register — failed submission", () => {
+  it("shows the backend's error and does not navigate away", async () => {
+    // The real endpoint returns 409 "An account with that email already
+    // exists" for a duplicate — verified against the live API 2026-08-30.
+    mockedRegister.mockRejectedValue(new Error("An account with that email already exists"));
+
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user);
+
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "An account with that email already exists",
+    );
+    expect(push).not.toHaveBeenCalled();
+    expect(mockedLogin).not.toHaveBeenCalled();
+  });
+});
