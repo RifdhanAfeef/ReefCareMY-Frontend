@@ -7,18 +7,21 @@ import { useEffect, useMemo, useState } from "react";
 import { ReviewLocationSummary } from "@/features/epic-04-location/location-flow";
 import { useMockAppState } from "@/features/shared/mock-app-state";
 import { isFutureDisplayDate, isValidDisplayDate } from "@/lib/format/date";
+import { submitReport as submitReportApi } from "@/lib/api/reportsApi";
 import { clearDraftPhotos, loadDraftPhotos, type StoredDraftPhoto } from "./draft-storage";
 import { getThreatCategory } from "./threat-data";
+import { buildReportSubmissionPayload } from "./report-payload";
 import styles from "./reporting.module.css";
 
 type ReviewPhoto = StoredDraftPhoto & { previewUrl: string };
 
 export function ReportReview() {
   const router = useRouter();
-  const { reportDraft, locationDraft, isObserverAuthenticated, submitReport } = useMockAppState();
+  const { reportDraft, locationDraft, resetReportDraft } = useMockAppState();
   const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
   const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
   const threat = getThreatCategory(reportDraft.threatCategoryCode);
   const session = locationDraft.sessions.find((item) => item.id === locationDraft.selectedSessionId);
 
@@ -45,31 +48,42 @@ export function ReportReview() {
   const missingItems = useMemo(() => {
     const items: string[] = [];
     if (photos.length === 0) items.push("at least one photograph");
-    if (!threat) items.push("threat category");
+    if (!threat || !reportDraft.threatCategoryId) items.push("backend threat category");
     if (!reportDraft.observationDate || !isValidDisplayDate(reportDraft.observationDate) || isFutureDisplayDate(reportDraft.observationDate)) items.push("valid, non-future observation date");
     if (!reportDraft.observationTime) items.push("observation time");
     if (!reportDraft.description.trim()) items.push("description");
-    if (!session || !locationDraft.confidence) items.push("Dive Session, location and confidence");
+    if (!session?.backendId || !locationDraft.confidence) items.push("backend Dive Session, location and confidence");
     return items;
   }, [locationDraft.confidence, photos.length, reportDraft, session, threat]);
 
   async function submit() {
     if (missingItems.length > 0 || submitting) return;
-    if (!isObserverAuthenticated) {
-      router.push("/login?next=/report-a-reef/review");
-      return;
-    }
     setSubmitting(true);
-    const result = submitReport();
-    if (!result) { setSubmitting(false); return; }
-    await clearDraftPhotos();
-    router.push("/report-a-reef/confirmation");
+    setSubmissionError("");
+    try {
+      const payload = buildReportSubmissionPayload(reportDraft, locationDraft);
+      const result = await submitReportApi(payload, photos.map((photo) => photo.file));
+      await clearDraftPhotos();
+      resetReportDraft();
+      const query = new URLSearchParams({
+        reportReference: result.reportReference,
+        status: result.status,
+        submittedAt: result.submittedAt,
+        generalLocation: result.generalLocation,
+        threatCategory: threat?.label ?? "Not provided",
+      });
+      router.push(`/report-a-reef/confirmation?${query.toString()}`);
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : "The report could not be submitted.");
+      setSubmitting(false);
+    }
   }
 
   return (
     <div className={styles.stack}>
       {missingItems.length > 0 && <section className={styles.errorBox} role="alert"><strong>Complete the report before submitting</strong><p>Missing: {missingItems.join(", ")}.</p><Link className={styles.textButton} href="/report-a-reef">Return to observation details</Link></section>}
       {photoLoadFailed && <section className={styles.errorBox}><strong>Photographs could not be restored</strong><p>Return to the observation form and select the evidence again.</p></section>}
+      {submissionError && <section className={styles.errorBox} role="alert"><strong>Report not submitted</strong><p>{submissionError}</p></section>}
 
       <div className={styles.reviewLayout}>
         <section className={styles.card}>

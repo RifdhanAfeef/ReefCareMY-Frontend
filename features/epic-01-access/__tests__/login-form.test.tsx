@@ -5,9 +5,6 @@ import { AuthProvider, useAuth } from "../auth-context";
 import { LoginForm } from "../login-form";
 import * as authApi from "@/lib/api/authApi";
 
-// authApi.login now makes a real network call against the deployed
-// backend, which a unit test must never do — every scenario below drives
-// the component through a mocked login(), not the real one.
 vi.mock("@/lib/api/authApi");
 const mockedLogin = vi.mocked(authApi.login);
 
@@ -51,9 +48,6 @@ async function fillAndSubmit(email: string, password: string) {
   return user;
 }
 
-// The deployed backend (verified against the live API 2026-08-30) returns
-// the same "Invalid credentials" message whether the account doesn't exist
-// or the password is wrong. The frontend must show that text verbatim.
 describe("Login — generic credential error", () => {
   it("shows the backend's message as-is", async () => {
     mockedLogin.mockRejectedValue(new Error("Invalid credentials"));
@@ -130,8 +124,4 @@ describe("Login — success stores the session and navigates onward", () => {
     expect(stored?.user?.displayName).toBe("observer");
     expect(stored?.accessToken).toBe("tok-abc");
   });
-
-  it.todo(
-    "a submitted report persists with the authenticated observer as its submitter — requires Epic 2 report-submission wiring",
-  );
 });

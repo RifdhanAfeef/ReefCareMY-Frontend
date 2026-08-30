@@ -9,8 +9,9 @@ import {
   isFutureDisplayDate,
   isValidDisplayDate,
 } from "@/lib/format/date";
+import { getThreatCategories } from "@/lib/api/referenceApi";
+import type { ThreatCategoryReference } from "@/lib/api/types";
 import { createPhotoId, loadDraftPhotos, saveDraftPhotos, type StoredDraftPhoto } from "./draft-storage";
-import { threatCategories } from "./threat-data";
 import type { ReportDraft } from "./types";
 import styles from "./reporting.module.css";
 
@@ -33,6 +34,8 @@ export function ObservationForm() {
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [uploadMessage, setUploadMessage] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<ThreatCategoryReference[]>([]);
+  const [categoryLoadError, setCategoryLoadError] = useState("");
   const previewUrls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -54,6 +57,27 @@ export function ObservationForm() {
       previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [updateReportDraft]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getThreatCategories()
+      .then((categories) => {
+        if (cancelled) return;
+        setCategoryOptions(categories);
+        const selected = categories.find((category) => category.code === reportDraft.threatCategoryCode);
+        if (selected && reportDraft.threatCategoryId !== selected.threatCategoryId) {
+          updateReportDraft({ threatCategoryId: selected.threatCategoryId });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCategoryLoadError("Threat categories could not be loaded. Check the backend connection and try again.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reportDraft.threatCategoryCode, reportDraft.threatCategoryId, updateReportDraft]);
 
   function updateField(changes: Partial<ReportDraft>, errorField?: keyof FieldErrors) {
     updateReportDraft(changes);
@@ -106,7 +130,7 @@ export function ObservationForm() {
   function validate() {
     const nextErrors: FieldErrors = {};
     if (photos.length === 0) nextErrors.photos = "Attach at least one photo before continuing.";
-    if (!reportDraft.threatCategoryCode) nextErrors.threat = "Select the closest threat category.";
+    if (!reportDraft.threatCategoryCode || !reportDraft.threatCategoryId) nextErrors.threat = "Select the closest threat category.";
     if (!reportDraft.observationDate) nextErrors.date = "Enter the observation date.";
     else if (!isValidDisplayDate(reportDraft.observationDate)) nextErrors.date = "Choose a valid observation date.";
     else if (isFutureDisplayDate(reportDraft.observationDate)) nextErrors.date = "Observation date cannot be in the future.";
@@ -150,7 +174,7 @@ export function ObservationForm() {
             </div>
           </section>
 
-          <label className={styles.field}><span className={styles.fieldLabel}>Threat category *</span><select value={reportDraft.threatCategoryCode} onChange={(event) => updateField({ threatCategoryCode: event.target.value as ReportDraft["threatCategoryCode"] }, "threat")} aria-invalid={Boolean(errors.threat)}><option value="">Select a category</option>{threatCategories.map((category) => <option value={category.code} key={category.code}>{category.label}</option>)}</select>{errors.threat && <span className={styles.errorText} role="alert">{errors.threat}</span>}</label>
+          <label className={styles.field}><span className={styles.fieldLabel}>Threat category *</span><select value={reportDraft.threatCategoryCode} disabled={categoryOptions.length === 0} onChange={(event) => { const selected = categoryOptions.find((category) => category.code === event.target.value); updateField({ threatCategoryCode: (selected?.code ?? "") as ReportDraft["threatCategoryCode"], threatCategoryId: selected?.threatCategoryId ?? null }, "threat"); }} aria-invalid={Boolean(errors.threat)}><option value="">{categoryOptions.length === 0 ? "Loading categories…" : "Select a category"}</option>{categoryOptions.map((category) => <option value={category.code} key={category.code}>{category.label}</option>)}</select>{categoryLoadError && <span className={styles.errorText} role="alert">{categoryLoadError}</span>}{errors.threat && <span className={styles.errorText} role="alert">{errors.threat}</span>}</label>
           <div className={styles.field}><span className={styles.fieldLabel}>Observation date *</span><DisplayDateInput label="Observation date" required value={reportDraft.observationDate} onChange={(value) => updateField({ observationDate: value }, "date")} invalid={Boolean(errors.date)} describedBy={errors.date ? "observation-date-error" : undefined} />{errors.date && <span className={styles.errorText} id="observation-date-error" role="alert">{errors.date}</span>}</div>
           <label className={styles.field}><span className={styles.fieldLabel}>Approximate observation time *</span><input type="time" value={reportDraft.observationTime} onChange={(event) => updateField({ observationTime: event.target.value }, "time")} aria-invalid={Boolean(errors.time)} />{errors.time && <span className={styles.errorText} role="alert">{errors.time}</span>}</label>
           <label className={styles.field}><span className={styles.fieldLabel}>Estimated depth in metres <span className={styles.fieldMeta}>Optional</span></span><input type="number" min="0" step="0.1" inputMode="decimal" placeholder="For example, 15" value={reportDraft.estimatedDepthMetres} onChange={(event) => updateField({ estimatedDepthMetres: event.target.value }, "depth")} aria-invalid={Boolean(errors.depth)} />{errors.depth && <span className={styles.errorText} role="alert">{errors.depth}</span>}</label>

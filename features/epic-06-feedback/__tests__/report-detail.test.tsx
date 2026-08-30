@@ -43,8 +43,6 @@ describe("Report detail — shows what was observed", () => {
   });
 });
 
-// US6.3 AC1 — the coordinator's reason for requesting more information is
-// shown when present; no needs_more_info special-casing, just this field.
 describe("US6.3 — information request reason is visible", () => {
   it("shows the reason when the backend sends one", async () => {
     mockedGetReportDetail.mockResolvedValue(
@@ -72,8 +70,6 @@ describe("US6.3 — information request reason is visible", () => {
   });
 });
 
-// US6.2 AC3 — the closure label (and public note, if any) is shown for a
-// closed report, using exactly the text the backend sends.
 describe("US6.2 AC3 — closure reason is visible", () => {
   it("shows the closure label and public note for a closed report", async () => {
     mockedGetReportDetail.mockResolvedValue(

@@ -8,13 +8,6 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => mockSearchParams,
 }));
 
-// POST /api/v1/reports is a real, mutating request against the live
-// backend now, so this component must never call it itself just from
-// being rendered — it only ever displays what's already in the URL, put
-// there by whatever submission step navigated here.
-// US6.1 AC1/AC2 — a unique Report ID and initial status exist, and the
-// confirmation screen shows Report ID, threat type, location, submission
-// date and current status.
 describe("US6.1 — report confirmation", () => {
   it("shows the report ID, threat type, location, submission date and status from the URL", () => {
     mockSearchParams = new URLSearchParams({

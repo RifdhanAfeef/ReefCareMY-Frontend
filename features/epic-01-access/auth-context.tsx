@@ -18,12 +18,8 @@ type AuthContextValue = {
   status: AuthStatus;
   user: AuthUser | null;
   accessToken: string | null;
-  // Registration is not session-establishing (the register endpoint
-  // returns no token — see authApi.ts), so it's not part of this context:
-  // it's a plain API call the register form makes directly, followed by
-  // its own separate call to login().
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,9 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // localStorage doesn't exist during SSR, so this can't be a lazy
-    // useState initializer without mismatching the server-rendered markup;
-    // it must run once after mount instead.
     const stored = readStoredAuth();
     if (stored) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,11 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(result.accessToken);
     setStatus("authenticated");
     writeStoredAuth({ user: result.user, accessToken: result.accessToken });
+    return result.user;
   }, []);
 
-  const logout = useCallback(() => {
-    // The deployed API has no /auth/logout route — signing out only ever
-    // clears the locally stored token, nothing is called on the backend.
+  const logout = useCallback(async () => {
+    await authApi.logout().catch(() => undefined);
     setUser(null);
     setAccessToken(null);
     setStatus("unauthenticated");

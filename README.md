@@ -1,4 +1,4 @@
-# ReefCare MY frontend skeleton
+# ReefCare MY frontend — Iteration 1
 
 ## Start locally
 
@@ -17,6 +17,9 @@ Open `http://localhost:3000` in a browser.
 ```bash
 npm run dev     # start local development
 npm run lint    # check code quality
+npm run typecheck # check TypeScript without producing files
+npm run test    # run acceptance and API-contract tests
+npm run check   # lint, typecheck and test
 npm run build   # confirm the production build works
 npm run start   # run the completed production build
 ```
@@ -41,17 +44,18 @@ Folders such as `(public)`, `(observer)`, `(coordinator)` and `(admin)` organise
 
 These layouts demonstrate the navigation expected for each role. Actual security must also be enforced by authentication, server-side authorisation and the backend API.
 
-## Frontend development phase
+## Integration status
 
-The team is completing the interface before connecting it to the FastAPI backend.
-Pages currently use local mock data and a shared frontend prototype store so the
-screens and flows can be built and tested independently. Case claims, review
-outcomes, report details and the current location draft are saved in browser
-`localStorage`, so they remain available across routes and refreshes on the same
-browser. Epic 2 photograph files use IndexedDB because browser files cannot be
-stored safely as JSON in `localStorage`.
+Authentication, reference data, Dive Sessions, report submission and observer
+tracking use the FastAPI API. Coordinator and administrator screens retain
+prototype state until the remaining backend contracts are finalised. API adapters for every documented
+endpoint are in `lib/api/`; known backend-owned blockers and the integration order
+are recorded in [`docs/BACKEND_INTEGRATION_READINESS.md`](docs/BACKEND_INTEGRATION_READINESS.md).
 
-- Do not add API calls to an epic until the team begins the agreed integration phase.
+Case claims, review outcomes and the current location draft are currently saved
+in browser `localStorage`. Epic 2 photograph files use IndexedDB because browser
+files cannot be stored safely as JSON in `localStorage`.
+
 - Keep mock records in the relevant `features/epic-*/` folder rather than inside page files.
 - Keep interface types close to the documented backend contract to reduce later rework.
 - Replace mock data with functions in `lib/api/` during integration; do not rewrite the page layouts.
@@ -102,11 +106,9 @@ Further contribution rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - Epic 5: report queue, claim flow, evidence assessment, information requests,
   response selection and compatible fixed closure reasons.
 
-Login and registration remain intentionally separate so the authentication
-teammate can connect those pages later. The Epic 2 prototype assumes an
-authenticated Registered Observer while testing; submission must be protected
-by the real session once authentication is connected. The current layouts do
-not provide real authentication or authorisation.
+Login and registration are connected. Observer, coordinator and administrator
+route groups are gated by role for navigation/privacy; FastAPI must still enforce
+authorisation on every protected endpoint.
 
 To restore the original demonstration data while testing, clear this site's
 storage (both Local Storage and IndexedDB) in browser developer tools and
@@ -115,8 +117,8 @@ refresh the page.
 The latest FastAPI report contract uses camelCase frontend fields such as
 `threatCategoryId`, `observedAt`, `diveSessionId`, `namedDiveSiteId` and
 `locationConfidence`. Integration-ready types are recorded in
-`features/epic-02-reporting/api-contract.ts`. Do not connect them until the
-planned integration phase.
+`lib/api/types.ts`. The pure payload builder is in
+`features/epic-02-reporting/report-payload.ts`.
 
 All visible frontend dates use `dd/mm/yyyy`. Report and Dive Session forms use
 the shared date control, which accepts typed `dd/mm/yyyy` values and also opens

@@ -25,3 +25,32 @@
   color: var(--color-ink);
   text-align: right;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primaryAction,
+.secondaryAction {
+  border: 1px solid var(--color-primary);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primaryAction {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.secondaryAction {
+  background: #fff;
+  color: var(--color-primary);
+}
+.confirmation {
+  display: grid;
+  gap: 24px;
+}

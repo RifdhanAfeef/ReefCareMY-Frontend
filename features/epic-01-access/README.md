@@ -38,13 +38,12 @@ Frontend mock accounts store the same role codes documented by the backend:
 records similarly keep `statusCode` separate from `statusLabel` so later API
 responses can be adopted without changing the visible wording.
 
-## Current development phase
+## Current integration phase
 
-Epic 1 remains frontend-only. Components use mock records and shared browser
-prototype state; no FastAPI endpoint is called yet. During
-the later integration phase, replace `mock-data.ts` imports with request
-functions based on `lib/api/client.ts` while keeping the existing components and
-page routes.
+Login, registration, logout and role-aware route gates are connected through
+`lib/api/authApi.ts`. Coordinator case data and administrator records remain
+mocked because the attached backend contract does not yet define every endpoint
+needed by those screens. See `docs/BACKEND_INTEGRATION_READINESS.md`.
 
 ## Backend integration still required
 
@@ -62,10 +61,7 @@ The documented integration routes relevant to the existing coordinator screens
 include `GET /api/v1/coordinator/queue`,
 `POST /api/v1/coordinator/reports/{reportReference}/claim`, and
 `GET /api/v1/coordinator/reports/{reportReference}`. These are reference points
-only and are not called by the current frontend implementation.
-
-Authentication UI begins in `app/(auth)`. Login and registration are owned by a
-separate teammate and were not changed as part of this Epic 1 implementation.
+and are implemented as typed adapters in `lib/api/coordinatorApi.ts`.
 
 The latest backend contract adds `POST /api/v1/auth/register`. The registration
 form should send only `email`, `displayName` and `password`, require at least 12
@@ -73,10 +69,10 @@ password characters, and never show or submit a role selector. A successful
 registration creates an `observer` but does not return a token, so the user must
 then log in. Duplicate email uses HTTP 409 and invalid input uses HTTP 422.
 
-Before integrating login, confirm the final request format with the backend
-team: the current route uses `application/x-www-form-urlencoded` fields
+Login uses `application/x-www-form-urlencoded` fields
 `username` (the email) and `password`, while the backend document explicitly
-marks its older JSON login contract as unresolved.
+shows both nested and flat success shapes. The adapter normalises either until
+OpenAPI is finalised.
 
 The report queue and case-detail routes are shared with Epic 5. Ownership and
 exact-location access are checked before the review workflow is displayed.

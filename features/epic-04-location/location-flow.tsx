@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { DisplayDateInput } from "@/components/forms/display-date-input";
 import { BackButton } from "@/components/navigation/back-button";
 import type { LocationConfidenceCode } from "@/features/epic-01-access/types";
 import { useMockAppState, type DiveSession, type MapPin } from "@/features/shared/mock-app-state";
-import { isValidDisplayDate } from "@/lib/format/date";
+import { createDiveSession, getDiveSessions } from "@/lib/api/diveSessionsApi";
+import { getDiveSites } from "@/lib/api/referenceApi";
+import type { DiveSiteReference } from "@/lib/api/types";
+import { displayDateAndTimeToIso, displayDateToIsoDate, inputDateToDisplayValue, isFutureDisplayDate, isValidDisplayDate } from "@/lib/format/date";
 import styles from "./location-flow.module.css";
 
 const confidenceOptions: Array<{ value: LocationConfidenceCode; label: string }> = [
@@ -16,13 +19,6 @@ const confidenceOptions: Array<{ value: LocationConfidenceCode; label: string }>
   { value: "within_1km", label: "Within approximately 1 km" },
   { value: "dive_site_only", label: "Dive-site only" },
   { value: "unsure", label: "Unsure" },
-];
-
-const mockDiveSites = [
-  { id: 1, name: "Tiger Reef, Tioman", publicAreaLabel: "Tioman Island" },
-  { id: 2, name: "Renggis Island, Tioman", publicAreaLabel: "Tioman Island" },
-  { id: 3, name: "Temple of the Sea (Tokong Laut)", publicAreaLabel: "Perhentian Islands" },
-  { id: 4, name: "Turtle Bay, Perhentian", publicAreaLabel: "Perhentian Islands" },
 ];
 
 const malaysiaBounds = {
@@ -76,8 +72,13 @@ export function LocationFlow() {
   const [sessionError, setSessionError] = useState("");
   const [dateError, setDateError] = useState("");
   const [confidenceError, setConfidenceError] = useState("");
+  const [diveSites, setDiveSites] = useState<DiveSiteReference[]>([]);
+  const [referenceError, setReferenceError] = useState("");
+  const [loadingReferences, setLoadingReferences] = useState(true);
+  const [savingSession, setSavingSession] = useState(false);
+  const initiallySelectedSessionId = useRef(selectedSessionId);
   const session = useMemo(() => sessions.find((item) => item.id === selectedSessionId) ?? sessions[0], [selectedSessionId, sessions]);
-  const sessionTitle = `${session.site}${session.label ? ` - ${session.label}` : ""}`;
+  const sessionTitle = session ? `${session.site}${session.label ? ` - ${session.label}` : ""}` : "No Dive Session selected";
   const confidenceLabel = confidenceOptions.find((item) => item.value === confidence)?.label ?? "Not provided";
   const coordinates = mapCoordinates(pin);
   const availableConfidenceOptions = locationSource === "map_pin"
@@ -86,17 +87,65 @@ export function LocationFlow() {
   const setStep = (nextStep: typeof step) => updateLocationDraft({ step: nextStep });
   const updateForm = (changes: Partial<typeof form>) => updateLocationDraft({ form: { ...form, ...changes } });
 
-  const createSession = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getDiveSites(), getDiveSessions()])
+      .then(([sites, backendSessions]) => {
+        if (cancelled) return;
+        const nextSessions: DiveSession[] = backendSessions.map((item) => ({
+          id: `backend-session-${item.diveSessionId}`,
+          backendId: item.diveSessionId,
+          namedDiveSiteId: item.namedDiveSite.diveSiteId,
+          site: `${item.namedDiveSite.name} — ${item.namedDiveSite.publicAreaLabel}`,
+          label: item.label,
+          date: inputDateToDisplayValue(item.diveDate),
+          start: item.approximateStartTime ? new Date(item.approximateStartTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
+          end: item.approximateEndTime ? new Date(item.approximateEndTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
+        }));
+        setDiveSites(sites);
+        updateLocationDraft({
+          sessions: nextSessions,
+          selectedSessionId: nextSessions.some((item) => item.id === initiallySelectedSessionId.current)
+            ? initiallySelectedSessionId.current
+            : (nextSessions[0]?.id ?? ""),
+        });
+      })
+      .catch(() => setReferenceError("Dive sites and sessions could not be loaded. Check the backend connection and try again."))
+      .finally(() => {
+        if (!cancelled) setLoadingReferences(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [updateLocationDraft]);
+
+  const createSession = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.site.trim()) { setSessionError("Enter or select a named dive site."); return; }
     setSessionError("");
     if (!isValidDisplayDate(form.date)) { setDateError("Enter the date in dd/mm/yyyy format, for example 26/08/2026."); return; }
-    const selectedSite = mockDiveSites.find((item) => item.name === form.site);
+    if (isFutureDisplayDate(form.date)) { setDateError("Dive date cannot be in the future."); return; }
+    if (form.start && form.end && form.end <= form.start) { setDateError("Approximate end time must be after the start time."); return; }
+    const selectedSite = diveSites.find((item) => String(item.diveSiteId) === form.site);
     if (!selectedSite) { setSessionError("Select a named dive site from the list."); return; }
-    const next: DiveSession = { id: `session-${Date.now()}`, backendId: null, namedDiveSiteId: selectedSite.id, site: selectedSite.name, label: form.label.trim() || undefined, date: form.date || undefined, start: form.start || undefined, end: form.end || undefined, notes: form.notes.trim() || undefined };
-    updateLocationDraft({ sessions: [...sessions, next], selectedSessionId: next.id, step: "location" });
-    setSessionError("");
-    setDateError("");
+    setSavingSession(true);
+    try {
+      const created = await createDiveSession({
+        namedDiveSiteId: selectedSite.diveSiteId,
+        diveDate: displayDateToIsoDate(form.date),
+        ...(form.label.trim() ? { label: form.label.trim() } : {}),
+        ...(form.start ? { approximateStartTime: displayDateAndTimeToIso(form.date, form.start) } : {}),
+        ...(form.end ? { approximateEndTime: displayDateAndTimeToIso(form.date, form.end) } : {}),
+      });
+      const next: DiveSession = { id: `backend-session-${created.diveSessionId}`, backendId: created.diveSessionId, namedDiveSiteId: created.namedDiveSite.diveSiteId, site: `${created.namedDiveSite.name} — ${created.namedDiveSite.publicAreaLabel}`, label: created.label, date: inputDateToDisplayValue(created.diveDate), start: form.start || undefined, end: form.end || undefined };
+      updateLocationDraft({ sessions: [...sessions, next], selectedSessionId: next.id, step: "location" });
+      setSessionError("");
+      setDateError("");
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : "The Dive Session could not be created.");
+    } finally {
+      setSavingSession(false);
+    }
   };
   const continueFromLocation = (source: "dive_site" | "map_pin") => {
     updateLocationDraft({ locationSource: source, pin: source === "dive_site" ? null : pin, confidence: source === "dive_site" ? "dive_site_only" : "", step: "confirm" });
@@ -112,14 +161,15 @@ export function LocationFlow() {
     <PageHeading eyebrow="Report a Reef / Dive details" title="Add a Dive Session" description="Enter the dive site, then add the date, dive number or approximate times if known." />
     <form className={styles.formLayout} onSubmit={createSession} noValidate>
       <section className={styles.card}><h2>Session details</h2><div className={styles.formGrid}>
-        <label className={styles.field}>Named dive site *<span>Select from ReefCare&apos;s approved site list</span><select value={form.site} onChange={(event) => { updateForm({ site: event.target.value }); setSessionError(""); }} aria-invalid={Boolean(sessionError)} aria-describedby={sessionError ? "site-error" : undefined}><option value="">Select a dive site</option>{mockDiveSites.map((site) => <option value={site.name} key={site.id}>{site.name} — {site.publicAreaLabel}</option>)}</select></label>
+        <label className={styles.field}>Named dive site *<span>Select from ReefCare&apos;s approved site list</span><select value={form.site} disabled={loadingReferences || diveSites.length === 0} onChange={(event) => { updateForm({ site: event.target.value }); setSessionError(""); }} aria-invalid={Boolean(sessionError)} aria-describedby={sessionError ? "site-error" : undefined}><option value="">{loadingReferences ? "Loading dive sites…" : "Select a dive site"}</option>{diveSites.map((site) => <option value={site.diveSiteId} key={site.diveSiteId}>{site.name} — {site.publicAreaLabel}</option>)}</select></label>
         <label className={styles.field}>Session label / dive number <span>Optional</span><input value={form.label} onChange={(event) => updateForm({ label: event.target.value })} placeholder="Dive 2" /></label>
-        <div className={styles.field}>Dive date <span>Optional — dd/mm/yyyy</span><DisplayDateInput label="Dive date" value={form.date} onChange={(value) => { updateForm({ date: value }); setDateError(""); }} invalid={Boolean(dateError)} describedBy={dateError ? "date-error" : undefined} /></div>
+        <div className={styles.field}>Dive date *<span>Required by the backend — dd/mm/yyyy</span><DisplayDateInput label="Dive date" required value={form.date} onChange={(value) => { updateForm({ date: value }); setDateError(""); }} invalid={Boolean(dateError)} describedBy={dateError ? "date-error" : undefined} /></div>
         <div className={styles.timeFields}><label className={styles.field}>Approximate start <span>Optional</span><input type="time" value={form.start} onChange={(event) => updateForm({ start: event.target.value })} /></label><label className={styles.field}>Approximate end <span>Optional</span><input type="time" value={form.end} onChange={(event) => updateForm({ end: event.target.value })} /></label></div>
-        <label className={`${styles.field} ${styles.fullField}`}>Session notes <span>Optional</span><textarea value={form.notes} onChange={(event) => updateForm({ notes: event.target.value })} placeholder="Only add what you know." /></label>
-      </div>{sessionError && <p className={styles.errorText} id="site-error" role="alert">{sessionError}</p>}{dateError && <p className={styles.errorText} id="date-error" role="alert">{dateError}</p>}<p className={styles.supporting}>Only add what you know. If the date is blank, the observation date will be supplied as the required Dive Session date during backend integration.</p><div className={styles.actions}><button className={styles.secondaryButton} type="button" onClick={() => setStep("session")}>Back</button><button className={styles.primaryButton} type="submit">Save session</button></div></section>
+      </div>{referenceError && <p className={styles.errorText} role="alert">{referenceError}</p>}{sessionError && <p className={styles.errorText} id="site-error" role="alert">{sessionError}</p>}{dateError && <p className={styles.errorText} id="date-error" role="alert">{dateError}</p>}<p className={styles.supporting}>A named dive site and dive date are required by the current backend contract. The session label and approximate times are optional.</p><div className={styles.actions}><button className={styles.secondaryButton} type="button" onClick={() => setStep("session")}>Back</button><button className={styles.primaryButton} type="submit" disabled={savingSession || loadingReferences}>{savingSession ? "Saving…" : "Save session"}</button></div></section>
     </form>
   </section>;
+
+  if (!session && step !== "session") return <section className={styles.page}><PageHeading eyebrow="Report a Reef / Dive details" title="Choose a Dive Session first" description="A backend Dive Session is required before location details can be added." /><section className={styles.card}>{referenceError && <p className={styles.errorText} role="alert">{referenceError}</p>}<button className={styles.primaryButton} type="button" onClick={() => setStep("session")}>Return to Dive Sessions</button></section></section>;
 
   if (step === "location") return <section className={styles.page}>
     <PageHeading eyebrow="Report a Reef / Location" title="Where on the reef did you observe it?" description="Use the Dive Session location, or add an optional map pin for a more precise position." />
@@ -147,9 +197,9 @@ export function LocationFlow() {
 
   return <section className={styles.page}>
     <BackButton fallbackHref="/report-a-reef" label="Back to report form" />
-    <PageHeading eyebrow="Report a Reef / Dive details" title="Which dive was this observation from?" description="Select a recent dive or add a new Dive Session. Only the dive site is required." />
-    <div className={styles.choiceGrid}><section className={`${styles.card} ${styles.selectedCard}`}><h2>Use an existing Dive Session</h2><p className={styles.supporting}>Choose a recent session connected to this report.</p><fieldset className={styles.sessionList}><legend className="sr-only">Recent Dive Sessions</legend>{sessions.map((item) => <label className={styles.sessionOption} key={item.id}><input type="radio" name="dive-session" value={item.id} checked={selectedSessionId === item.id} onChange={() => updateLocationDraft({ selectedSessionId: item.id })} /><span><strong>{item.site}{item.label ? ` - ${item.label}` : ""}</strong><small>{[item.date, item.start && item.end ? `${item.start} to ${item.end}` : item.start].filter(Boolean).join(" - ") || "Optional details not provided"}</small></span></label>)}</fieldset><button className={styles.primaryButton} type="button" onClick={() => setStep("location")}>Use selected session</button></section>
-      <section className={styles.card}><h2>Create a new Dive Session</h2><p className={styles.supporting}>Use this when the observation is not linked to an existing session.</p><div className={styles.requirementGroup}><h3>Minimum required</h3><p><span aria-hidden="true">✓</span> Named dive site</p></div><div className={styles.requirementGroup}><h3>Optional details</h3><p><span aria-hidden="true">□</span> Session label or dive number</p><p><span aria-hidden="true">□</span> Date and approximate times</p></div><button className={styles.secondaryButton} type="button" onClick={() => setStep("create")}>Create Dive Session</button></section></div>
+    <PageHeading eyebrow="Report a Reef / Dive details" title="Which dive was this observation from?" description="Select a recent dive or add a new Dive Session with a named site and dive date." />
+    <div className={styles.choiceGrid}><section className={`${styles.card} ${styles.selectedCard}`}><h2>Use an existing Dive Session</h2><p className={styles.supporting}>Choose a recent session connected to this report.</p>{referenceError && <p className={styles.errorText} role="alert">{referenceError}</p>}<fieldset className={styles.sessionList}><legend className="sr-only">Recent Dive Sessions</legend>{loadingReferences && <p>Loading Dive Sessions…</p>}{!loadingReferences && sessions.length === 0 && <p>No existing Dive Sessions were found. Create one to continue.</p>}{sessions.map((item) => <label className={styles.sessionOption} key={item.id}><input type="radio" name="dive-session" value={item.id} checked={selectedSessionId === item.id} onChange={() => updateLocationDraft({ selectedSessionId: item.id })} /><span><strong>{item.site}{item.label ? ` - ${item.label}` : ""}</strong><small>{[item.date, item.start && item.end ? `${item.start} to ${item.end}` : item.start].filter(Boolean).join(" - ") || "Optional details not provided"}</small></span></label>)}</fieldset><button className={styles.primaryButton} type="button" disabled={!session || loadingReferences} onClick={() => setStep("location")}>Use selected session</button></section>
+      <section className={styles.card}><h2>Create a new Dive Session</h2><p className={styles.supporting}>Use this when the observation is not linked to an existing session.</p><div className={styles.requirementGroup}><h3>Required by the backend</h3><p><span aria-hidden="true">✓</span> Named dive site</p><p><span aria-hidden="true">✓</span> Dive date</p></div><div className={styles.requirementGroup}><h3>Optional details</h3><p><span aria-hidden="true">□</span> Session label or dive number</p><p><span aria-hidden="true">□</span> Approximate start and end times</p></div><button className={styles.secondaryButton} type="button" onClick={() => setStep("create")}>Create Dive Session</button></section></div>
     <aside className={styles.infoPanel}><strong>Why add a Dive Session?</strong><p>It keeps observations, photographs and location details from the same dive together.</p></aside>
   </section>;
 }

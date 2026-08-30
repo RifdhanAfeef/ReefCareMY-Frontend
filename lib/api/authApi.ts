@@ -1,31 +1,39 @@
 import { apiRequest } from "./client";
-import type { AuthResult, RegisteredUser, RegisterPayload } from "./types";
+import type { AuthResult, AuthUser, RegisteredUser, RegisterPayload } from "./types";
 
 export const MIN_PASSWORD_LENGTH = 12;
 export const MAX_PASSWORD_LENGTH = 128;
 export const MAX_DISPLAY_NAME_LENGTH = 100;
 
+type NestedAuthResult = {
+  user: AuthUser;
+  session: {
+    accessToken: string;
+    tokenType: string;
+    expiresIn: number;
+  };
+};
+
+function normaliseAuthResult(result: AuthResult | NestedAuthResult): AuthResult {
+  if ("session" in result) {
+    return { user: result.user, ...result.session };
+  }
+  return result;
+}
+
 export async function login(email: string, password: string): Promise<AuthResult> {
-  // Real contract: POST /api/v1/auth/login, application/x-www-form-urlencoded,
-  // body `username=<email>&password=<password>` — the wire field is named
-  // "username" even though it holds the email. `auth: false` because there
-  // is no session yet to attach.
   const body = new URLSearchParams({ username: email, password });
 
-  return apiRequest<AuthResult>({
+  const result = await apiRequest<AuthResult | NestedAuthResult>({
     path: "/api/v1/auth/login",
     method: "POST",
     body,
     auth: false,
   });
+  return normaliseAuthResult(result);
 }
 
 export async function register(payload: RegisterPayload): Promise<RegisteredUser> {
-  // Real contract: POST /api/v1/auth/register, JSON body
-  // { email, displayName, password }. No role field exists on this schema
-  // at all — self-registration always creates an observer. The response
-  // (201) is the created account, not a session; call login() separately
-  // afterward if the caller wants to sign the new account in.
   const { email, displayName, password } = payload;
 
   return apiRequest<RegisteredUser>({
@@ -34,4 +42,12 @@ export async function register(payload: RegisterPayload): Promise<RegisteredUser
     body: { email, displayName, password },
     auth: false,
   });
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+  return apiRequest<AuthUser>({ path: "/api/v1/auth/me" });
+}
+
+export async function logout(): Promise<void> {
+  return apiRequest<void>({ path: "/api/v1/auth/logout", method: "POST" });
 }

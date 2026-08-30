@@ -30,8 +30,8 @@ The numbering below intentionally follows the latest Iteration 1 user-story docu
 - `components/templates/` — common starting layout for content pages.
 - `config/navigation.ts` — labels and destinations for each role.
 - `lib/api/client.ts` — shared backend request helper.
-- `features/shared/mock-app-state.tsx` — shared frontend-only case and location
-  state used until backend integration begins.
+- `features/shared/mock-app-state.tsx` — local report/location draft state plus
+  coordinator prototype state awaiting the remaining backend contracts.
 - `package.json`, `next.config.ts` and `tsconfig.json` — project-wide configuration.
 
 Do not create separate `.html` entry pages. A new browser page must be created as a `page.tsx` file inside the appropriate `app` route folder.

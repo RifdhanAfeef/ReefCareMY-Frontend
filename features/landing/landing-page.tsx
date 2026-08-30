@@ -21,9 +21,15 @@ function ThreatIcon({ src }: { src: (typeof threats)[number]["icon"] }) {
 }
 
 export function LandingPage() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const signedIn = status === "authenticated";
-  const reportHref = signedIn ? "/report-a-reef" : "/login?next=/report-a-reef";
+  const isObserver = user?.role === "observer";
+  const signedInDestination = user?.role === "case_coordinator"
+    ? { href: "/coordinator/report-queue", label: "Open report intake" }
+    : user?.role === "system_administrator"
+      ? { href: "/admin/users", label: "Manage users and access" }
+      : { href: "/report-a-reef", label: "Start a reef report" };
+  const reportHref = isObserver ? "/report-a-reef" : "/login?next=/report-a-reef";
 
   return (
     <div className={styles.page}>
@@ -36,7 +42,7 @@ export function LandingPage() {
             <div className={styles.actions}>
               <Link className={styles.primaryButton} href="/learn">Learn what to report</Link>
               {signedIn ? (
-                <Link className={styles.secondaryButton} href="/report-a-reef">Start a reef report</Link>
+                <Link className={styles.secondaryButton} href={signedInDestination.href}>{signedInDestination.label}</Link>
               ) : (
                 <Link className={styles.secondaryButton} href="/register">Create observer account</Link>
               )}
@@ -71,7 +77,7 @@ export function LandingPage() {
       </section>
 
       <section className={styles.processSection} aria-labelledby="process-heading">
-        <div className={styles.processIntro}><p className={styles.eyebrow}>A clear reporting journey</p><h2 id="process-heading">From observation to a traceable report</h2><p>You can learn without an account. Sign in as a Registered Observer to create, submit and track a report.</p><Link className={styles.primaryButton} href={reportHref}>{signedIn ? "Start a reef report" : "Log in to start a report"}</Link></div>
+        <div className={styles.processIntro}><p className={styles.eyebrow}>A clear reporting journey</p><h2 id="process-heading">From observation to a traceable report</h2><p>You can learn without an account. Sign in as a Registered Observer to create, submit and track a report.</p><Link className={styles.primaryButton} href={signedIn ? signedInDestination.href : reportHref}>{signedIn ? signedInDestination.label : "Log in to start a report"}</Link></div>
         <ol className={styles.steps}>
           <li><span>1</span><div><h3>Check the guidance</h3><p>Choose the closest threat and observe without touching or disturbing the reef.</p></div></li>
           <li><span>2</span><div><h3>Record what you saw</h3><p>Add photographs, date and time, a short description and safe location details.</p></div></li>
@@ -82,7 +88,7 @@ export function LandingPage() {
 
       <section className={styles.finalCta}>
         <div><p className={styles.eyebrow}>See something concerning?</p><h2>Start with the guidance, then report only what you can observe safely.</h2></div>
-        <div className={styles.actions}><Link className={styles.primaryButton} href="/learn">Explore the guidance</Link>{signedIn ? <Link className={styles.lightButton} href="/report-a-reef">Start a reef report</Link> : <Link className={styles.lightButton} href="/register">Create an account</Link>}</div>
+        <div className={styles.actions}><Link className={styles.primaryButton} href="/learn">Explore the guidance</Link>{signedIn ? <Link className={styles.lightButton} href={signedInDestination.href}>{signedInDestination.label}</Link> : <Link className={styles.lightButton} href="/register">Create an account</Link>}</div>
       </section>
     </div>
   );

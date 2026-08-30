@@ -77,9 +77,6 @@ export function ReportDetail({ reportReference }: { reportReference: string }) {
         </p>
       )}
 
-      {/* Rendered exactly as the backend sends it — this one field is the
-          whole of US6.3 ("more information needed"): no needs_more_info
-          special-casing, just this reason shown when it's present. */}
       {report.informationRequestReason && (
         <p className={styles.infoRequest} role="status">
           More information needed: {report.informationRequestReason}

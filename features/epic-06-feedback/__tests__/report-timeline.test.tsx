@@ -10,9 +10,6 @@ beforeEach(() => {
   mockedGetReportTimeline.mockReset();
 });
 
-// US6.2 AC2 — Given a report has a status history, when the observer opens
-// the report, then the system shall display a status timeline using
-// observer-facing labels only, in order.
 describe("US6.2 AC2 — plain-language status timeline", () => {
   it("renders each status change as an observer-facing label, in order", async () => {
     mockedGetReportTimeline.mockResolvedValue({

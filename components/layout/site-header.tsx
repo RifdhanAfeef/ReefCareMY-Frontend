@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { HeaderAction, NavigationItem } from "@/config/navigation";
 import { useAuth } from "@/features/epic-01-access/auth-context";
+import type { UserRole } from "@/lib/api/types";
 import { Brand } from "./brand";
 import styles from "./site-header.module.css";
 
@@ -28,10 +29,19 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  function signOut() {
-    logout();
+  const roleLabels: Record<UserRole, string> = {
+    observer: "Registered Observer",
+    case_coordinator: "Case Coordinator",
+    system_administrator: "System Administrator",
+  };
+  const resolvedIdentity = identity ?? (user
+    ? { label: roleLabels[user.role], initial: user.displayName.trim().charAt(0).toUpperCase() || "U" }
+    : undefined);
+
+  async function signOut() {
+    await logout();
     router.push("/");
   }
 
@@ -56,13 +66,13 @@ export function SiteHeader({
           })}
         </nav>
 
-        {(identity || actions.length > 0) && (
+        {(resolvedIdentity || actions.length > 0) && (
           <div className={styles.actions}>
-            {identity && (
-              <div className={styles.identity} aria-label={`Signed in as ${identity.label}`}>
-                <span>{identity.label}</span>
+            {resolvedIdentity && (
+              <div className={styles.identity} aria-label={`Signed in as ${resolvedIdentity.label}`}>
+                <span>{resolvedIdentity.label}</span>
                 <span className={styles.avatar} aria-hidden="true">
-                  {identity.initial}
+                  {resolvedIdentity.initial}
                 </span>
               </div>
             )}

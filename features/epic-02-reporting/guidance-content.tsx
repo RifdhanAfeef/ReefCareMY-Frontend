@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useAuth } from "@/features/epic-01-access/auth-context";
 import { threatCategories, type ThreatCategory } from "./threat-data";
 import type { ThreatCategoryCode } from "./types";
 import styles from "./reporting.module.css";
@@ -47,9 +48,17 @@ function ThreatIcon({ code }: { code: ThreatCategory["code"] }) {
 }
 
 export function GuidanceContent({ initialThreat }: { initialThreat?: ThreatCategoryCode }) {
+  const { status, user } = useAuth();
   const categories = threatCategories.filter((category) => category.guidanceAvailable);
   const [selectedCode, setSelectedCode] = useState(initialThreat ?? categories[0].code);
   const selected = categories.find((category) => category.code === selectedCode) ?? categories[0];
+  const reportAction = user?.role === "case_coordinator"
+    ? { href: "/coordinator/report-queue", label: "Return to report intake" }
+    : user?.role === "system_administrator"
+      ? { href: "/admin/users", label: "Return to administration" }
+      : status === "authenticated"
+        ? { href: "/report-a-reef", label: "Start a report" }
+        : { href: "/login?next=/report-a-reef", label: "Log in to start a report" };
 
   return (
     <div className={styles.stack}>
@@ -108,7 +117,7 @@ export function GuidanceContent({ initialThreat }: { initialThreat?: ThreatCateg
           <p className={styles.supporting}>You can save a local draft and complete the location before final submission.</p>
         </div>
         <div className={styles.actions}>
-          <Link className={styles.primaryButton} href="/report-a-reef">Start a report</Link>
+          <Link className={styles.primaryButton} href={reportAction.href}>{reportAction.label}</Link>
         </div>
       </section>
     </div>

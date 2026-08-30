@@ -14,14 +14,10 @@ export class ApiError extends Error {
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   path: string;
-  /** JSON-serialisable object, or a pre-built URLSearchParams/FormData body. */
-  body?: BodyInit | Record<string, unknown>;
-  /** Attach the stored access token as `Authorization: Bearer <token>`. Default true. */
+  body?: BodyInit | object;
   auth?: boolean;
 };
 
-// FastAPI's default error envelope: `detail` is a plain string for most
-// errors (401/403/404/409), or a list of Pydantic validation errors for 422.
 function extractErrorMessage(payload: unknown, fallback: string): string {
   if (payload && typeof payload === "object" && "detail" in payload) {
     const detail = (payload as { detail: unknown }).detail;
@@ -59,8 +55,6 @@ export async function apiRequest<T>({
   let requestBody: BodyInit | undefined;
 
   if (body instanceof URLSearchParams || body instanceof FormData) {
-    // Both set their own correct Content-Type (with multipart's boundary)
-    // when handed to fetch directly — setting it ourselves would break it.
     requestBody = body;
   } else if (body !== undefined) {
     requestHeaders.set("Content-Type", "application/json");

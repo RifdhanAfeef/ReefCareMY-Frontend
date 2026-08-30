@@ -14,19 +14,11 @@ export type ReportPhotoMetadata = {
 
 export type ReportDraft = {
   threatCategoryCode: ThreatCategoryCode | "";
+  threatCategoryId: number | null;
   observationDate: string;
   observationTime: string;
   estimatedDepthMetres: string;
   description: string;
   photos: ReportPhotoMetadata[];
   lastSavedAt: string | null;
-};
-
-export type SubmissionSummary = {
-  reportReference: string;
-  threatLabel: string;
-  generalLocation: string;
-  submittedAt: string;
-  statusCode: "received";
-  statusLabel: "Received";
 };

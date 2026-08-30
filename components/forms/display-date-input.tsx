@@ -15,11 +15,6 @@ type DisplayDateInputProps = {
   label: string;
 };
 
-/**
- * Keeps the visible value in dd/mm/yyyy while retaining a native calendar
- * picker. Native date inputs display according to the browser locale, which
- * can otherwise show mm/dd/yyyy even though the stored frontend value is not.
- */
 export function DisplayDateInput({
   value,
   onChange,
@@ -37,9 +32,6 @@ export function DisplayDateInput({
     try {
       picker.showPicker();
     } catch {
-      // Older browsers may not expose showPicker. A focused programmatic
-      // click is the closest native fallback and still runs from the user's
-      // button click gesture.
       picker.focus();
       picker.click();
     }

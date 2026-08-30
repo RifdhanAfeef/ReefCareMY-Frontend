@@ -1,7 +1,3 @@
-// Types below mirror the deployed API's schemas one-for-one (checked
-// against https://reefcare-backend.vercel.app/openapi.json on 2026-08-30).
-// There is no field-mapping layer anymore — these ARE the wire shapes.
-
 export type UserRole = "observer" | "case_coordinator" | "system_administrator";
 
 export type AuthUser = {
@@ -10,8 +6,6 @@ export type AuthUser = {
   role: UserRole;
 };
 
-// Matches AuthResponse — flat, accessToken/tokenType/expiresIn sit
-// alongside `user`, not nested inside a "session" object.
 export type AuthResult = {
   accessToken: string;
   tokenType: string;
@@ -25,7 +19,6 @@ export type RegisterPayload = {
   password: string;
 };
 
-// Matches RegistrationResponse. No token — registering does not sign in.
 export type RegisteredUser = {
   id: number;
   email: string;
@@ -33,7 +26,6 @@ export type RegisteredUser = {
   role: UserRole;
 };
 
-// case_status.code values (Iteration 1 set). Matches the CaseStatus enum.
 export type ReportStatusCode =
   | "draft"
   | "submitted"
@@ -49,7 +41,6 @@ export type ReportStatusCode =
   | "closed_no_partner"
   | "closed_logged";
 
-// Matches ObserverReportSummary (GET /reports/mine item shape).
 export type ReportSummary = {
   reportReference: string;
   threatCategory: string;
@@ -68,7 +59,6 @@ export type MyReportsFilters = {
   pageSize?: number;
 };
 
-// Matches ObserverReportListResponse.
 export type MyReportsResult = {
   items: ReportSummary[];
   page: number;
@@ -76,7 +66,6 @@ export type MyReportsResult = {
   total: number;
 };
 
-// Matches ObserverLocationResponse.
 export type ReportPreciseLocation = {
   latitude: number | null;
   longitude: number | null;
@@ -86,14 +75,12 @@ export type ReportPreciseLocation = {
   relocationNotes: string | null;
 };
 
-// Matches ObserverClosureSummary.
 export type ReportClosureSummary = {
   status: ReportStatusCode;
   closureLabel: string;
   publicNote: string | null;
 };
 
-// Matches ObserverReportDetailResponse (GET /reports/{reportReference}).
 export type ReportDetail = {
   reportReference: string;
   threatCategory: string;
@@ -111,7 +98,6 @@ export type ReportDetail = {
   submittedAt: string;
 };
 
-// Matches ObserverTimelineEvent / ObserverTimelineResponse.
 export type ReportTimelineEvent = {
   statusLabel: string;
   occurredAt: string;
@@ -122,13 +108,170 @@ export type ReportTimeline = {
   timeline: ReportTimelineEvent[];
 };
 
-// Matches ReportSubmittedResponse (POST /reports). Notably has no
-// threatCategory or statusLabel — the caller already has the former from
-// its own form state, and the latter isn't part of this particular
-// response.
 export type ReportSubmittedResult = {
   reportReference: string;
   status: string;
   submittedAt: string;
   generalLocation: string;
+};
+
+export type ThreatCategoryCode =
+  | "ghost_gear"
+  | "coral_bleaching"
+  | "marine_debris"
+  | "physical_reef_damage"
+  | "unsure";
+
+export type ThreatCategoryReference = {
+  threatCategoryId: number;
+  code: ThreatCategoryCode;
+  label: string;
+  shortExplanation: string;
+  usefulEvidence: string;
+  safetyReminder: string;
+  iconReference: string | null;
+};
+
+export type DiveSiteReference = {
+  diveSiteId: number;
+  name: string;
+  publicAreaLabel: string;
+  region: string;
+};
+
+export type DiveSession = {
+  diveSessionId: number;
+  label: string;
+  diveDate: string;
+  namedDiveSite: Omit<DiveSiteReference, "region">;
+  approximateStartTime: string | null;
+  approximateEndTime: string | null;
+};
+
+export type DiveSessionCreate = {
+  namedDiveSiteId: number;
+  diveDate: string;
+  label?: string;
+  approximateStartTime?: string;
+  approximateEndTime?: string;
+};
+
+export type LocationConfidence =
+  | "exact"
+  | "within_100m"
+  | "within_1km"
+  | "dive_site_only"
+  | "unsure";
+
+export type MapPinInput = {
+  latitude: number;
+  longitude: number;
+};
+
+export type ReportSubmissionPayload = {
+  threatCategoryId: number;
+  observedAt: string;
+  estimatedDepthMetres?: number;
+  description: string;
+  diveSessionId: number;
+  location: {
+    namedDiveSiteId: number;
+    locationConfidence: LocationConfidence;
+    mapPin: MapPinInput | null;
+    relocationNotes?: string;
+  };
+};
+
+export type CoordinatorQueueItem = {
+  reportReference: string;
+  threat: string;
+  area: string;
+  statusLabel: string;
+  submittedAt: string;
+  hoursInQueue: number;
+};
+
+export type CoordinatorQueueResult = {
+  items: CoordinatorQueueItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
+export type CaseOwner = {
+  id: number;
+  displayName: string;
+};
+
+export type ClaimedCase = {
+  reportReference: string;
+  owner: CaseOwner;
+  statusCode: ReportStatusCode;
+  statusLabel: string;
+  claimedAt: string;
+};
+
+export type CoordinatorCase = {
+  reportReference: string;
+  observerId: number;
+  threat: string;
+  description: string;
+  observedAt?: string;
+  estimatedDepthMetres: number | null;
+  area: string;
+  preciseLocation: {
+    latitude: number | null;
+    longitude: number | null;
+    uncertaintyMetres: number | null;
+  } | null;
+  statusCode: ReportStatusCode;
+  statusLabel: string;
+  submittedAt: string;
+  owner: CaseOwner;
+  evidence: Array<Record<string, unknown>>;
+};
+
+export type InformationRequestResult = {
+  reportReference: string;
+  status: "needs_more_info";
+  reason: string;
+  requestedAt: string;
+};
+
+export type ResponseType =
+  | "monitoring_only"
+  | "refer_or_share"
+  | "intervention_required";
+
+export type CaseDecisionCreate = {
+  responseType: ResponseType;
+  notes?: string;
+  referredTo?: string;
+};
+
+export type CaseDecisionResult = {
+  reportReference: string;
+  responseType: ResponseType;
+  decidedAt: string;
+  decidedBy: number;
+};
+
+export type ClosureReasonCode =
+  | "referred_other_org"
+  | "monitored_no_action"
+  | "not_substantiated"
+  | "no_responsible_partner"
+  | "logged_for_reference";
+
+export type CaseClosureCreate = {
+  closureReasonCode: ClosureReasonCode;
+  publicClosureNote: string;
+  referredTo?: string;
+};
+
+export type CaseClosureResult = {
+  reportReference: string;
+  status: ReportStatusCode;
+  closureReasonCode: ClosureReasonCode;
+  closedAt: string;
 };

@@ -47,8 +47,6 @@ export function ReportTimeline({ reportReference }: { reportReference: string })
   return (
     <ol className={styles.timeline}>
       {events.map((event, index) => (
-        // Rendered exactly as the backend labels it — no internal
-        // status-code translation happens on the frontend (US6.2 AC4).
         <li key={`${event.occurredAt}-${index}`} className={styles.step}>
           <span className={styles.marker} aria-hidden="true" />
           <div>

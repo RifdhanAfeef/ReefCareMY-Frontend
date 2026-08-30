@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { AuthProvider } from "../auth-context";
-import { RequireAuth } from "../require-auth";
+import { RequireAuth, RequireRole } from "../require-auth";
 
 let mockPathname = "/my-reports";
 const replace = vi.fn();
@@ -16,8 +16,52 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-// US1.5 AC1 — Given a visitor is not authenticated, when they attempt to
-// submit a report, then they are required to sign in.
+describe("US1.1 — role-based route separation", () => {
+  it("redirects an observer away from the coordinator workspace", async () => {
+    mockPathname = "/coordinator/report-queue";
+    window.localStorage.setItem(
+      "reefcare.auth",
+      JSON.stringify({
+        user: { id: 1, displayName: "Sam", role: "observer" },
+        accessToken: "token",
+      }),
+    );
+
+    render(
+      <AuthProvider>
+        <RequireRole role="case_coordinator">
+          <p>Coordinator queue</p>
+        </RequireRole>
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/my-reports"));
+    expect(screen.queryByText("Coordinator queue")).not.toBeInTheDocument();
+  });
+
+  it("allows a coordinator into the coordinator workspace", async () => {
+    mockPathname = "/coordinator/report-queue";
+    window.localStorage.setItem(
+      "reefcare.auth",
+      JSON.stringify({
+        user: { id: 2, displayName: "Casey", role: "case_coordinator" },
+        accessToken: "token",
+      }),
+    );
+
+    render(
+      <AuthProvider>
+        <RequireRole role="case_coordinator">
+          <p>Coordinator queue</p>
+        </RequireRole>
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByText("Coordinator queue")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+});
+
 describe("US1.5 AC1 — authentication required to submit a report", () => {
   it("redirects an unauthenticated visitor away from the report-a-reef route", async () => {
     mockPathname = "/report-a-reef";
@@ -37,8 +81,6 @@ describe("US1.5 AC1 — authentication required to submit a report", () => {
   });
 });
 
-// US1.5 AC2 — Given a visitor is not authenticated, when they attempt to
-// access My Reports, then the system shall require authentication.
 describe("US1.5 AC2 — authentication required for My Reports", () => {
   it("redirects an unauthenticated visitor away from my-reports", async () => {
     mockPathname = "/my-reports";

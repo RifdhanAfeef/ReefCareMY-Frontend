@@ -15,8 +15,6 @@ function resultOf(items: MyReportsResult["items"]): MyReportsResult {
   return { items, page: 1, pageSize: 20, total: items.length };
 }
 
-// US6.2 AC1 — Given an observer is logged in, when they open My Reports,
-// then the system shall list only the reports that the observer submitted.
 describe("US6.2 AC1 — observer sees their own reports", () => {
   it("renders one entry per report returned for the signed-in observer", async () => {
     mockedGetMyReports.mockResolvedValue(
@@ -49,8 +47,6 @@ describe("US6.2 AC1 — observer sees their own reports", () => {
   });
 });
 
-// US6.2 AC3 — Given a case has been closed with a recorded reason, when the
-// observer views My Reports, then the mapped observer-facing label is shown.
 describe("US6.2 AC3 — closure reason is visible", () => {
   it("shows the outcome text for a closed report", async () => {
     mockedGetMyReports.mockResolvedValue(
@@ -77,9 +73,6 @@ describe("US6.2 AC3 — closure reason is visible", () => {
   });
 });
 
-// US6.2 AC4 — Given an internal state exists for a report, when the observer
-// views the status, then only the mapped honest label is shown, never the
-// internal state name. The frontend must not derive its own wording.
 describe("US6.2 AC4 — no internal jargon is leaked", () => {
   it("renders whatever observer-facing label the backend sends, unchanged", async () => {
     mockedGetMyReports.mockResolvedValue(
@@ -105,8 +98,6 @@ describe("US6.2 AC4 — no internal jargon is leaked", () => {
   });
 });
 
-// US6.2 AC5 — Given a coordinator changes a report's status, when the
-// observer next opens My Reports, then the updated status is reflected.
 describe("US6.2 AC5 — status updates are reflected promptly", () => {
   it("shows the latest status the next time My Reports is opened", async () => {
     mockedGetMyReports.mockResolvedValueOnce(

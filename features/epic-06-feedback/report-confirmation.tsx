@@ -8,14 +8,6 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-// Reads the just-submitted report's summary from the URL rather than
-// calling the API itself: POST /api/v1/reports is a real, mutating request
-// against the live backend now, so a confirmation screen must never fire
-// it just by being loaded/refreshed. The (not yet built) submit step is
-// expected to call reportsApi.submitReport() itself, then navigate here
-// with the result — reportReference/status/submittedAt/generalLocation
-// come back from that response; threatCategory doesn't (US6.1/backend
-// doc §8.3), so it's carried over from the form's own local state instead.
 export function ReportConfirmation() {
   const searchParams = useSearchParams();
 
@@ -35,7 +27,8 @@ export function ReportConfirmation() {
   }
 
   return (
-    <dl className={styles.summary}>
+    <div className={styles.confirmation}>
+      <dl className={styles.summary}>
       <div className={styles.row}>
         <dt>Report ID</dt>
         <dd>{reportReference}</dd>
@@ -58,6 +51,11 @@ export function ReportConfirmation() {
         <dt>Status</dt>
         <dd>{capitalize(status)}</dd>
       </div>
-    </dl>
+      </dl>
+      <div className={styles.actions}>
+        <Link className={styles.primaryAction} href={`/my-reports/${encodeURIComponent(reportReference)}`}>Open this report</Link>
+        <Link className={styles.secondaryAction} href="/report-a-reef">Start another report</Link>
+      </div>
+    </div>
   );
 }

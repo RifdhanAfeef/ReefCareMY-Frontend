@@ -44,3 +44,19 @@ export function inputDateToDisplayValue(value: string) {
   const [, year, month, day] = match;
   return `${day}/${month}/${year}`;
 }
+
+export function displayDateToIsoDate(value: string) {
+  if (!isValidDisplayDate(value) || !value) {
+    throw new Error("Enter a valid date in dd/mm/yyyy format.");
+  }
+  const [day, month, year] = value.split("/");
+  return `${year}-${month}-${day}`;
+}
+
+export function displayDateAndTimeToIso(dateValue: string, timeValue: string) {
+  const isoDate = displayDateToIsoDate(dateValue);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(timeValue)) {
+    throw new Error("Enter a valid time.");
+  }
+  return new Date(`${isoDate}T${timeValue}:00`).toISOString();
+}

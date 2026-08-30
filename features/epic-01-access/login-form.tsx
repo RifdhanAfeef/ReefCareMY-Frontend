@@ -22,12 +22,18 @@ export function LoginForm() {
     setError(null);
 
     try {
-      await login(email, password);
-      const next = searchParams.get("next") ?? "/my-reports";
+      const user = await login(email, password);
+      const requestedNext = searchParams.get("next");
+      const roleDestination = user.role === "case_coordinator"
+        ? "/coordinator/report-queue"
+        : user.role === "system_administrator"
+          ? "/admin/users"
+          : "/my-reports";
+      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+        ? requestedNext
+        : roleDestination;
       router.push(next);
     } catch (err) {
-      // Displayed exactly as returned: the backend deliberately uses one
-      // message for both "no such account" and "wrong password".
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSubmitting(false);

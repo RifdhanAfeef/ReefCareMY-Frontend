@@ -10,10 +10,6 @@ beforeEach(() => {
   mockedGetMyReports.mockReset();
 });
 
-// US6.3 AC1 — Given a report's status is "Needs More Information", when the
-// observer views the report, then the system shall display "More
-// information needed". No dedicated needs_more_info logic is required —
-// this is just the status label rendering faithfully, like any other.
 describe('US6.3 AC1 — "More information needed" is visible', () => {
   it("shows the label when the report status is needs_more_info", async () => {
     mockedGetMyReports.mockResolvedValue({

@@ -12,8 +12,6 @@ import {
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
 
-// Deliberately simple — good enough to catch typos before a request; the
-// backend's Pydantic EmailStr validator remains authoritative.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RegisterForm() {
@@ -43,9 +41,6 @@ export function RegisterForm() {
     setSubmitting(true);
 
     try {
-      // Registering and signing in are two independent requests: the
-      // account-creation response carries no token (authApi.ts), so a
-      // separate login() call is what actually starts the session.
       await register({ displayName, email, password });
       await login(email, password);
       router.push("/my-reports");

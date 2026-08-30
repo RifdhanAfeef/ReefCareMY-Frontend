@@ -5,9 +5,6 @@ import { AuthProvider, useAuth } from "../auth-context";
 import { RegisterForm } from "../register-form";
 import * as authApi from "@/lib/api/authApi";
 
-// authApi.register()/login() now make real network calls against the
-// deployed backend — keep the real MIN/MAX_* constants (register-form.tsx
-// reads them for its own validation) but replace the two network calls.
 vi.mock("@/lib/api/authApi", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/authApi")>();
   return { ...actual, login: vi.fn(), register: vi.fn() };
@@ -26,7 +23,7 @@ function SignedInUser() {
   return <p>Signed in as {user?.displayName ?? "nobody"}</p>;
 }
 
-const VALID_PASSWORD = "correct-horse-battery"; // 22 chars, within 12–128
+const VALID_PASSWORD = "correct-horse-battery";
 
 beforeEach(() => {
   push.mockClear();
@@ -66,9 +63,6 @@ async function fillForm(
   }
 }
 
-// Backend contract (RegistrationCreate schema): email must be a valid
-// address, displayName 1–100 chars, password 12–128 chars. The frontend
-// must not rely solely on the backend's 422 for any of these.
 describe("Register — submission is disabled for invalid input", () => {
   it("disables the submit button while the password is shorter than 12 characters", async () => {
     renderForm();
@@ -132,8 +126,6 @@ describe("Register — button shows a loading state while submitting", () => {
     expect(button).toBeDisabled();
     expect(button).toHaveTextContent(/creating account/i);
 
-    // Let the mocked request settle so it can't leak into a later test —
-    // this render is never unmounted here.
     resolveRegister({
       id: 1,
       email: "observer@example.org",
@@ -150,9 +142,6 @@ describe("Register — button shows a loading state while submitting", () => {
   });
 });
 
-// Registration and sign-in are two independent requests: the register
-// response carries no session (authApi.ts), so a real, separate login()
-// call is what actually starts the session and lands the observer inside.
 describe("Register — success registers the account, then signs the observer in", () => {
   it("calls register() and login() as two separate requests and navigates in", async () => {
     mockedRegister.mockResolvedValue({
@@ -181,7 +170,6 @@ describe("Register — success registers the account, then signs the observer in
     expect(mockedLogin).toHaveBeenCalledTimes(1);
     expect(mockedLogin).toHaveBeenCalledWith("observer@example.org", VALID_PASSWORD);
 
-    // The register request must never include a role field.
     const registerPayload = mockedRegister.mock.calls[0][0];
     expect(registerPayload).not.toHaveProperty("role");
   });
@@ -189,8 +177,6 @@ describe("Register — success registers the account, then signs the observer in
 
 describe("Register — failed submission", () => {
   it("shows the backend's error and does not navigate away", async () => {
-    // The real endpoint returns 409 "An account with that email already
-    // exists" for a duplicate — verified against the live API 2026-08-30.
     mockedRegister.mockRejectedValue(new Error("An account with that email already exists"));
 
     renderForm();
