@@ -25,13 +25,13 @@ export const observerNavigation: NavigationItem[] = [
 ];
 
 export const coordinatorNavigation: NavigationItem[] = [
-  { label: "Report queue", href: "/coordinator/report-queue" },
+  { label: "Report intake", href: "/coordinator/report-queue" },
   { label: "My cases", href: "/coordinator/my-cases" },
 ];
 
 export const administratorNavigation: NavigationItem[] = [
-  { label: "Users", href: "/admin/users" },
-  { label: "Role requests", href: "/admin/role-requests" },
+  { label: "Users & roles", href: "/admin/users" },
+  { label: "Access requests", href: "/admin/role-requests" },
 ];
 
 export const signedInActions: HeaderAction[] = [

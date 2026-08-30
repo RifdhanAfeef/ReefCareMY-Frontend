@@ -7,7 +7,11 @@ export default function AdministratorLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShell navigation={administratorNavigation} actions={signedInActions}>
+    <AppShell
+      navigation={administratorNavigation}
+      actions={signedInActions}
+      identity={{ label: "Administrator", initial: "S" }}
+    >
       {children}
     </AppShell>
   );

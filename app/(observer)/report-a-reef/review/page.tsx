@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageTemplate } from "@/components/templates/page-template";
+import { ReportReview } from "@/features/epic-02-reporting/report-review";
 
 export const metadata: Metadata = { title: "Review report" };
 
@@ -8,7 +9,11 @@ export default function ReviewReportPage() {
     <PageTemplate
       eyebrow="Before submission"
       title="Review your report"
-      description="Show the complete observation and allow the observer to return to any section before submitting."
-    />
+      description="Check the evidence, observation details and protected location before lodging the report."
+      backLabel="Back to location"
+      backFallbackHref="/report-a-reef/location"
+    >
+      <ReportReview />
+    </PageTemplate>
   );
 }

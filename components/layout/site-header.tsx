@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { HeaderAction, NavigationItem } from "@/config/navigation";
+import { useAuth } from "@/features/epic-01-access/auth-context";
 import { Brand } from "./brand";
 import styles from "./site-header.module.css";
 
 type SiteHeaderProps = {
   navigation: NavigationItem[];
   actions?: HeaderAction[];
+  identity?: {
+    label: string;
+    initial: string;
+  };
 };
 
 function isActive(pathname: string, href: string) {
@@ -16,8 +21,19 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SiteHeader({ navigation, actions = [] }: SiteHeaderProps) {
+export function SiteHeader({
+  navigation,
+  actions = [],
+  identity,
+}: SiteHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  function signOut() {
+    logout();
+    router.push("/");
+  }
 
   return (
     <header className={styles.header}>
@@ -40,9 +56,26 @@ export function SiteHeader({ navigation, actions = [] }: SiteHeaderProps) {
           })}
         </nav>
 
-        {actions.length > 0 && (
+        {(identity || actions.length > 0) && (
           <div className={styles.actions}>
-            {actions.map((action) => (
+            {identity && (
+              <div className={styles.identity} aria-label={`Signed in as ${identity.label}`}>
+                <span>{identity.label}</span>
+                <span className={styles.avatar} aria-hidden="true">
+                  {identity.initial}
+                </span>
+              </div>
+            )}
+            {actions.map((action) => action.label === "Log out" ? (
+              <button
+                key={`${action.href}-${action.label}`}
+                className={`${styles.action} ${styles[action.variant]}`}
+                type="button"
+                onClick={signOut}
+              >
+                {action.label}
+              </button>
+            ) : (
               <Link
                 key={`${action.href}-${action.label}`}
                 className={`${styles.action} ${styles[action.variant]}`}

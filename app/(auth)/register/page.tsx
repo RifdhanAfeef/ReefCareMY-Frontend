@@ -9,6 +9,7 @@ export default function RegisterPage() {
     <PageTemplate
       title="Create your ReefCare MY account"
       description="Create an observer account so reports can be submitted and tracked securely."
+      centered
     >
       <RegisterForm />
     </PageTemplate>
