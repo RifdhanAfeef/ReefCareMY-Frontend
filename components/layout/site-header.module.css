@@ -18,19 +18,13 @@
   justify-self: start;
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  color: var(--color-ink);
-  font-size: 21px;
-  font-weight: 700;
   white-space: nowrap;
 }
 
-.brandMark {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--color-primary);
+.brandLogo {
+  width: 205px;
+  height: auto;
+  display: block;
 }
 
 .navigation {
@@ -78,6 +72,29 @@
   gap: 12px;
 }
 
+.identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #076f72;
+  background: #e5f4f1;
+  border: 1px solid var(--color-primary);
+  border-radius: 50%;
+  font-size: 13px;
+}
+
 .action {
   min-height: 42px;
   display: inline-flex;
@@ -88,6 +105,8 @@
   border-radius: var(--radius-button);
   font-size: 14px;
   font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease;
 }
 
@@ -158,5 +177,9 @@
   .action {
     min-height: 40px;
     padding: 0 18px;
+  }
+
+  .brandLogo {
+    width: 180px;
   }
 }

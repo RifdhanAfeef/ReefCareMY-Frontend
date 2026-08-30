@@ -7,7 +7,11 @@ export default function CoordinatorLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShell navigation={coordinatorNavigation} actions={signedInActions}>
+    <AppShell
+      navigation={coordinatorNavigation}
+      actions={signedInActions}
+      identity={{ label: "Case Coordinator", initial: "C" }}
+    >
       {children}
     </AppShell>
   );

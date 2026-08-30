@@ -10,6 +10,7 @@ export default function LoginPage() {
     <PageTemplate
       title="Welcome back"
       description="Log in to submit observations or view reports linked to your account."
+      centered
     >
       <Suspense>
         <LoginForm />

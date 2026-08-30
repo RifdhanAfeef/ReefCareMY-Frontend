@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   MAX_DISPLAY_NAME_LENGTH,
@@ -116,6 +117,10 @@ export function RegisterForm() {
       <button className={styles.submit} type="submit" disabled={!canSubmit}>
         {submitting ? "Creating account…" : "Create account"}
       </button>
+
+      <p className={styles.accountPrompt}>
+        Already have an account? <Link href="/login">Click here to log in</Link>.
+      </p>
     </form>
   );
 }

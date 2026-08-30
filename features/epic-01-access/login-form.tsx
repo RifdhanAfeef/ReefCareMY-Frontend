@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
@@ -70,6 +71,10 @@ export function LoginForm() {
       <button className={styles.submit} type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : "Log in"}
       </button>
+
+      <p className={styles.accountPrompt}>
+        Don&apos;t have an account? <Link href="/register">Click here to register</Link>.
+      </p>
     </form>
   );
 }

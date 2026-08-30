@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageTemplate } from "@/components/templates/page-template";
+import { CoordinatorCaseRoute } from "@/features/epic-05-triage/case-workflow";
 
 export const metadata: Metadata = { title: "Review report" };
 
@@ -9,12 +9,5 @@ export default async function CoordinatorReportDetailsPage({
   params: Promise<{ reportId: string }>;
 }) {
   const { reportId } = await params;
-
-  return (
-    <PageTemplate
-      eyebrow={`Case ${reportId}`}
-      title="Review report"
-      description="Present protected evidence and location details, ownership, evidence assessment, response choice and closure controls."
-    />
-  );
+  return <CoordinatorCaseRoute reportReference={reportId} />;
 }
