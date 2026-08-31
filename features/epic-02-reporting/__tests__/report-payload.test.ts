@@ -40,6 +40,6 @@ describe("report submission boundary", () => {
         mapPin: { latitude: 5.123456, longitude: 103.123456 },
       },
     });
-    expect(result.observedAt).toMatch(/^2026-08-27T/);
+    expect(result.observedAt).toBe(new Date("2026-08-27T09:10:00").toISOString());
   });
 });

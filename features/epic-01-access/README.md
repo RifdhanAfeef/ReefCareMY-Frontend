@@ -5,6 +5,7 @@ This folder contains the reusable frontend implementation for Epic 1.
 Primary route files:
 
 - `app/(admin)/admin/users/page.tsx`
+- `app/(admin)/admin/users/new/page.tsx`
 - `app/(admin)/admin/role-requests/page.tsx`
 - `app/(admin)/admin/role-requests/[requestId]/page.tsx`
 - `app/(coordinator)/coordinator/report-queue/page.tsx`
@@ -14,6 +15,8 @@ Primary route files:
 ## Current frontend behaviour
 
 - Search and filter the user directory.
+- Create a local preview account with an Observer, Case Coordinator or System
+  Administrator role without retaining the temporary password in the browser.
 - Change a user role or account status in temporary component state.
 - Review, approve or reject a Case Coordinator access request.
 - Display what coordinator access does and does not grant.
@@ -51,6 +54,7 @@ Before production use, the backend must authenticate the user and enforce every
 role and ownership rule. In particular, it must:
 
 - verify the `system_administrator` role before changing accounts;
+- create administrator-provisioned accounts and securely hash temporary passwords;
 - verify the `case_coordinator` role before returning the report queue;
 - perform an atomic claim so two coordinators cannot claim the same case;
 - return exact coordinates only after confirming the active owner;

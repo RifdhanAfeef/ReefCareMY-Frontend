@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { AccountStatus, UserAccount, UserRoleCode } from "./types";
+import { readCreatedUsers } from "./admin-user-storage";
 import { getUserRoleLabel, userRoleOptions } from "./role-catalog";
 import { StatusPill } from "./status-pill";
 import styles from "./access-ui.module.css";
@@ -19,6 +20,15 @@ export function UserDirectory({ initialUsers }: UserDirectoryProps) {
   const [roleFilter, setRoleFilter] = useState<UserRoleCode | "all">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
+
+  useEffect(() => {
+    const createdUsers = readCreatedUsers();
+    if (createdUsers.length > 0) {
+      const initialIds = new Set(initialUsers.map((user) => user.id));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAccounts([...initialUsers, ...createdUsers.filter((user) => !initialIds.has(user.id))]);
+    }
+  }, [initialUsers]);
 
   const visibleUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
