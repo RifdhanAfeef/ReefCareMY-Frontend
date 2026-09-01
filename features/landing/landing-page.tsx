@@ -37,7 +37,7 @@ export function LandingPage() {
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Community reef observation for Malaysia</p>
           <h1>Turn what you saw underwater into a useful reef report.</h1>
-          <p className={styles.lead}>ReefCare MY helps divers and reef observers document potential threats, protect sensitive locations and follow what happens after submission—without needing scientific expertise.</p>
+          <p className={styles.lead}>ReefCare MY helps divers and reef observers document potential threats, protect sensitive locations and follow what happens after submission without needing scientific expertise.</p>
           <div className={styles.heroControls}>
             <div className={styles.actions}>
               <Link className={styles.primaryButton} href="/learn">Learn what to report</Link>
