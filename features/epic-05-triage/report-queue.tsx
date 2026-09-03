@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { BackButton } from "@/components/navigation/back-button";
 import { useMockAppState } from "@/features/shared/mock-app-state";
 import styles from "./triage.module.css";
 
@@ -22,7 +21,6 @@ export function ReportQueue() {
   const unclaimedCount = cases.filter((record) => !record.owner).length;
 
   return <section className={styles.page}>
-    <BackButton fallbackHref="/coordinator/my-cases" label="Back to My Cases" />
     <header className={`${styles.heading} ${styles.queuePageHeading}`}><p className={styles.eyebrow}>Coordinator workspace / Report intake</p><h1>Submitted reports</h1><p>Claim an available report or check who currently owns a case.</p></header>
     <section className={styles.card}><div className={styles.queueCardHeading}><h2>Report queue</h2><span className={styles.pendingChip}>{unclaimedCount} unclaimed</span></div>
       <div className={styles.filters}><label>Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Report reference or threat" /></label><label>Ownership<select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All reports</option><option value="unclaimed">Unclaimed</option><option value="mine">My cases</option></select></label><label>Site<select value={site} onChange={(event) => setSite(event.target.value)}><option value="all">All sites</option>{sites.map((item) => <option key={item}>{item}</option>)}</select></label></div>

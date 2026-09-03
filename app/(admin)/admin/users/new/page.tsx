@@ -11,6 +11,7 @@ export default function AddNewUserPage() {
       eyebrow="Administration / Users & roles"
       title="Add New User"
       description="Create an account and assign its initial ReefCare role."
+      showBackButton
       backFallbackHref="/admin/users"
     >
       <NewUserForm existingUsers={users} />

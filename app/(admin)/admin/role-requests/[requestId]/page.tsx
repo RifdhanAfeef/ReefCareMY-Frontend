@@ -21,6 +21,9 @@ export default async function AccessRequestPage({
       eyebrow="Administration / Access requests"
       title="Review coordinator access"
       description="Check the account details and approve or reject the requested Case Coordinator role."
+      showBackButton
+      backLabel="Back to access requests"
+      backFallbackHref="/admin/role-requests"
     >
       <AccessRequestReview request={request} />
     </PageTemplate>

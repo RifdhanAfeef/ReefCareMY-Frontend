@@ -1,11 +1,15 @@
-# Epic 6 — Trust, status and observer feedback
+# Epic 6 — Report status and feedback
 
-Add reusable Epic 6 components, hooks and types in this folder.
+This folder contains the report confirmation, My Reports list, report details
+and status timeline shown to observers.
 
-Primary route files:
+The pages explain what has happened to a report and what the observer can do
+next. Status messages should stay clear and honest: a report may be received,
+under review or shared for consideration, but the interface must not promise
+that conservation action will take place.
 
-- `app/(observer)/report-a-reef/confirmation/page.tsx`
-- `app/(observer)/my-reports/page.tsx`
-- `app/(observer)/my-reports/[reportId]/page.tsx`
+Components in this folder are reused by:
 
-Observer wording should explain what happened and what happens next without promising conservation action.
+- `/report-a-reef/confirmation`
+- `/my-reports`
+- `/my-reports/[reportId]`

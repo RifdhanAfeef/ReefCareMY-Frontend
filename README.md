@@ -1,4 +1,4 @@
-# ReefCare MY frontend — Iteration 1
+# ReefCare MY frontend
 
 
 ## Deployed Frontend Link:
@@ -7,131 +7,80 @@ https://reefcare-frontend.vercel.app/
 
 ## Start locally
 
-Requirements: Node.js 20.9 or newer and npm.
+This is the Next.js frontend for ReefCare MY. It lets reef observers learn what
+to report, submit an observation and follow its status. It also contains the
+coordinator and administrator workspaces used in the Iteration 1 prototype.
+
+
+## Run the project
+
+You need Node.js 20.9 or newer and npm.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000` in a browser.
+On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
+Then open `http://localhost:3000`.
 
-## Main commands
+## Useful commands
 
 ```bash
-npm run dev     # start local development
-npm run lint    # check code quality
-npm run typecheck # check TypeScript without producing files
-npm run test    # run acceptance and API-contract tests
-npm run check   # lint, typecheck and test
-npm run build   # confirm the production build works
-npm run start   # run the completed production build
+npm run dev        # start the development server
+npm run check      # run linting, TypeScript checks and tests
+npm run build      # create a production build
+npm run start      # run the production build
 ```
 
-## Where teammates should work
+## Project structure
 
-- Browser pages belong in `app/` as `page.tsx` files.
-- Epic-specific components, hooks and types belong in the matching `features/epic-*` folder.
-- Shared layout components belong in `components/layout/`.
-- Shared page patterns belong in `components/templates/`.
-- Navigation labels and route destinations belong in `config/navigation.ts`.
-- Backend request helpers belong in `lib/api/`.
+- `app/` contains routes and page layouts.
+- `features/` contains the components and logic for each epic.
+- `components/` contains shared layout, navigation and form components.
+- `config/navigation.ts` contains navigation labels and destinations.
+- `lib/api/` contains the typed backend request functions.
+- `docs/` contains team guidance and backend integration notes.
 
-See [`docs/FOLDER_ASSIGNMENTS.md`](docs/FOLDER_ASSIGNMENTS.md) for the exact route and file assigned to every Iteration 1 page.
+Folders in parentheses organise routes without changing the URL. For example,
+`app/(observer)/my-reports/page.tsx` is available at `/my-reports`.
 
-## Route groups
-
-Folders such as `(public)`, `(observer)`, `(coordinator)` and `(admin)` organise the code by user view. Parentheses mean the folder name does not appear in the URL. For example:
-
-- `app/(observer)/my-reports/page.tsx` becomes `/my-reports`.
-- `app/(coordinator)/coordinator/report-queue/page.tsx` becomes `/coordinator/report-queue`.
-
-These layouts demonstrate the navigation expected for each role. Actual security must also be enforced by authentication, server-side authorisation and the backend API.
-
-## Integration status
+## Backend connection
 
 Authentication, reference data, Dive Sessions, report submission and observer
-tracking use the FastAPI API. Coordinator and administrator screens retain
-prototype state until the remaining backend contracts are finalised. API adapters for every documented
-endpoint are in `lib/api/`; known backend-owned blockers and the integration order
-are recorded in [`docs/BACKEND_INTEGRATION_READINESS.md`](docs/BACKEND_INTEGRATION_READINESS.md).
+report tracking are connected to the FastAPI backend. Some coordinator and
+administrator actions still use prototype data while the remaining backend
+endpoints are completed.
 
-Case claims, review outcomes and the current location draft are currently saved
-in browser `localStorage`. Epic 2 photograph files use IndexedDB because browser
-files cannot be stored safely as JSON in `localStorage`.
+Temporary prototype data is stored in the browser. Normal records use
+`localStorage`, while draft photographs use IndexedDB. The backend must remain
+responsible for authentication, permissions, private evidence, exact locations
+and permanent storage.
 
-- Keep mock records in the relevant `features/epic-*/` folder rather than inside page files.
-- Keep interface types close to the documented backend contract to reduce later rework.
-- Replace mock data with functions in `lib/api/` during integration; do not rewrite the page layouts.
-- Use `features/shared/mock-app-state.tsx` for cross-page prototype state. Do not
-  create a second case or location store inside an epic.
+Current account roles are:
 
-An unregistered visitor is an unauthenticated application state, not a stored
-user role. Iteration 1 registered accounts use these backend role codes:
+- `observer` — Registered Observer
+- `case_coordinator` — Case Coordinator
+- `system_administrator` — System Administrator
 
-- `observer` — displayed as **Registered Observer**
-- `case_coordinator` — displayed as **Case Coordinator**
-- `system_administrator` — displayed as **System Administrator**
+An unauthenticated visitor is not an account role.
 
-## Testing a page
+See `docs/BACKEND_INTEGRATION_READINESS.md` for the remaining integration work.
 
-A Next.js page can be tested even when it is not connected to the landing page or navigation. Start the development server with npm run dev or npm.cmd run dev, then enter the page’s route directly in the browser.
+## Testing notes
 
-For example:
-app/(observer)/report-a-reef/location/page.tsx
+- Run `npm run check` and `npm run build` before sharing a change.
+- Open a route directly in the browser when it is not linked in the navigation.
+- Clear Local Storage and IndexedDB to restore the original prototype data.
+- Dates are shown as `dd/mm/yyyy` and converted to ISO format at the API boundary.
 
-can be opened at:
-http://localhost:3000/report-a-reef/location
+## Team guidelines
 
-Folders in parentheses, such as (observer), organise the project but are not included in the URL. The filename page.tsx is also omitted.
-If a file is only a reusable component inside features/ or components/, it will not have its own URL. Import the component into an appropriate page.tsx file before testing it.
+- Add pages through the Next.js App Router instead of standalone HTML files.
+- Reuse the shared header, footer, templates and design tokens.
+- Keep mock records inside the relevant feature folder.
+- Never place sensitive coordinates or restricted data in public UI or logs.
+- Agree with the team before adding packages, renaming routes or changing shared files.
 
-
-## Team rules
-
-- Do not create standalone HTML pages. Use the existing Next.js App Router structure.
-- Do not duplicate the header, footer or design tokens inside an epic.
-- Do not change shared files, install packages or rename routes without team agreement.
-- Do not place sensitive coordinates or role-restricted values in public UI, hidden HTML, mock logs or console output.
-- Replace placeholder workspaces with the approved wireframe content while preserving professional headings and shared navigation.
-- Run lint and the production build before handing work to integration.
-
-Further contribution rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Implemented Iteration 1 areas
-
-- Public landing page: project purpose, supported threats, reporting journey,
-  location privacy and appropriate login/registration entry points.
-- Epic 1: administrator roles/access, coordinator ownership and restricted case access.
-- Epic 2: public threat guidance, validated observation capture, local drafts,
-  review, submission confirmation and handoff to the coordinator queue.
-- Epic 4: Dive Session selection/creation, named-site baseline, optional pin,
-  location confidence and privacy review.
-- Epic 5: report queue, claim flow, evidence assessment, information requests,
-  response selection and compatible fixed closure reasons.
-
-Login and registration are connected. Observer, coordinator and administrator
-route groups are gated by role for navigation/privacy; FastAPI must still enforce
-authorisation on every protected endpoint.
-
-To restore the original demonstration data while testing, clear this site's
-storage (both Local Storage and IndexedDB) in browser developer tools and
-refresh the page.
-
-The latest FastAPI report contract uses camelCase frontend fields such as
-`threatCategoryId`, `observedAt`, `diveSessionId`, `namedDiveSiteId` and
-`locationConfidence`. Integration-ready types are recorded in
-`lib/api/types.ts`. The pure payload builder is in
-`features/epic-02-reporting/report-payload.ts`.
-
-All visible frontend dates use `dd/mm/yyyy`. Report and Dive Session forms use
-the shared date control, which accepts typed `dd/mm/yyyy` values and also opens
-the browser's calendar picker. The visible value stays independent of the
-browser or operating-system locale and is converted to the backend's ISO value
-at the API boundary.
-
-Standard content pages receive the shared back button from
-`components/templates/page-template.tsx`. Epic-specific full-page workflows use
-the reusable `components/navigation/back-button.tsx` component alongside their
-own step-level Back and Cancel controls.
+More contribution guidance is available in `CONTRIBUTING.md`.

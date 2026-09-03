@@ -18,7 +18,7 @@ export function PageTemplate({
   title,
   description,
   children,
-  showBackButton = true,
+  showBackButton = false,
   backFallbackHref = "/",
   backLabel = "Back",
   centered = false,

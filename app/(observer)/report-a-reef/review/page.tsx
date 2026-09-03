@@ -10,6 +10,7 @@ export default function ReviewReportPage() {
       eyebrow="Before submission"
       title="Review your report"
       description="Check the evidence, observation details and protected location before lodging the report."
+      showBackButton
       backLabel="Back to location"
       backFallbackHref="/report-a-reef/location"
     >

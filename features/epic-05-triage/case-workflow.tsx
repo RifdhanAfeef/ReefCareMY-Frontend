@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
-import { BackButton } from "@/components/navigation/back-button";
 import { RestrictedCase } from "@/features/epic-01-access/case-access";
 import type { ClosureReasonCode } from "@/features/epic-01-access/types";
 import { useMockAppState } from "@/features/shared/mock-app-state";
@@ -16,7 +15,7 @@ type DuplicateAnswer = "yes" | "no" | "unsure" | "";
 type ResponseType = "monitoring" | "referral" | "intervention" | "";
 
 function Heading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <><BackButton fallbackHref="/coordinator/report-queue" label="Back" /><header className={styles.heading}><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{description}</p></header></>;
+  return <header className={styles.heading}><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{description}</p></header>;
 }
 
 function nowLabel() {

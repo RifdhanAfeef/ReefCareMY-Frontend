@@ -10,6 +10,7 @@ export default function ReportAReefPage() {
       eyebrow="New observation"
       title="Tell us what you observed"
       description="Capture the reef threat, date, evidence and a short description without requiring scientific training."
+      showBackButton
       backLabel="Back to guidance"
       backFallbackHref="/learn"
     >

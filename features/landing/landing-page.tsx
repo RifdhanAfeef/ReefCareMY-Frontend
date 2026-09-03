@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/features/epic-01-access/auth-context";
 import styles from "./landing-page.module.css";
 
@@ -20,8 +21,85 @@ function ThreatIcon({ src }: { src: (typeof threats)[number]["icon"] }) {
   );
 }
 
+const causticMesh = [
+  "M0 62C35 42 68 45 104 74C140 102 174 83 206 58C244 29 284 47 322 78C360 109 398 85 480 62",
+  "M0 166C38 140 70 143 102 174C135 206 170 185 203 153C236 121 276 137 310 172C344 207 391 188 480 166",
+  "M0 272C39 242 76 245 110 278C143 310 176 292 214 259C250 228 286 239 326 275C364 309 403 296 480 272",
+  "M86 0C70 28 75 48 104 74C131 99 120 134 102 174C84 214 88 244 110 278C124 299 104 323 86 340",
+  "M202 0C220 24 227 37 206 58C186 80 180 123 203 153C228 185 234 224 214 259C194 291 195 318 202 340",
+  "M326 0C296 30 296 54 322 78C345 103 337 142 310 172C282 204 295 246 326 275C350 298 339 320 326 340",
+].join("");
+
+function CausticLayer({ id, className, seed }: { id: string; className: string; seed: number }) {
+  const patternId = `${id}-pattern`;
+  const filterId = `${id}-filter`;
+
+  return (
+    <svg className={className} viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id={patternId} width="480" height="340" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="#7bc4c1" strokeLinecap="round" strokeLinejoin="round">
+            <path d={causticMesh} strokeOpacity=".13" strokeWidth="8" />
+            <path d={causticMesh} strokeOpacity=".46" strokeWidth="2.1" />
+          </g>
+        </pattern>
+        <filter id={filterId} x="-15%" y="-15%" width="130%" height="130%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.012" numOctaves="2" seed={seed} result="waterNoise" />
+          <feDisplacementMap in="SourceGraphic" in2="waterNoise" scale="28" xChannelSelector="R" yChannelSelector="B" />
+          <feGaussianBlur stdDeviation="0.35" />
+        </filter>
+      </defs>
+      <rect width="1400" height="700" fill={`url(#${patternId})`} filter={`url(#${filterId})`} />
+    </svg>
+  );
+}
+
+function WaterCaustics({ id }: { id: string }) {
+  return (
+    <div className={styles.waterCaustics} aria-hidden="true">
+      <CausticLayer id={`${id}-one`} className={styles.causticLayerOne} seed={7} />
+      <CausticLayer id={`${id}-two`} className={styles.causticLayerTwo} seed={13} />
+    </div>
+  );
+}
+
+function useScrollReveal() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const reducedMotion = typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion || typeof IntersectionObserver === "undefined") {
+      section.classList.add(styles.isVisible);
+      return;
+    }
+
+    section.classList.add(styles.motionReady);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        section.classList.add(styles.isVisible);
+        observer.disconnect();
+      },
+      { threshold: 0.16, rootMargin: "0px 0px -10% 0px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  return sectionRef;
+}
+
 export function LandingPage() {
   const { status, user } = useAuth();
+  const processSectionRef = useScrollReveal();
+  const threatSectionRef = useScrollReveal();
   const signedIn = status === "authenticated";
   const signedInDestination = user?.role === "case_coordinator"
     ? { href: "/coordinator/report-queue", label: "Open report intake" }
@@ -31,6 +109,7 @@ export function LandingPage() {
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
+        <WaterCaustics id="hero-caustics" />
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Community reef observation for Malaysia</p>
           <h1>Turn what you saw underwater into a useful reef report.</h1>
@@ -62,7 +141,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className={styles.processSection} aria-labelledby="process-heading">
+      <section ref={processSectionRef} className={styles.processSection} aria-labelledby="process-heading">
         <div className={styles.processIntro}><p className={styles.eyebrow}>A clear reporting journey</p><h2 id="process-heading">From observation to a traceable report</h2><p>You can learn without an account. Sign in as a Registered Observer to create, submit and track a report.</p></div>
         <ol className={styles.steps}>
           <li><span>1</span><div><h3>Check the guidance</h3><p>Choose the closest threat and observe without touching or disturbing the reef.</p></div></li>
@@ -72,9 +151,10 @@ export function LandingPage() {
         </ol>
       </section>
 
-      <section className={styles.section} aria-labelledby="threat-heading">
+      <section ref={threatSectionRef} className={`${styles.section} ${styles.threatSection}`} aria-labelledby="threat-heading">
+        <WaterCaustics id="threat-caustics" />
         <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Supported observations</p><h2 id="threat-heading">Four reef threats you can document</h2></div><Link className={styles.textLink} href="/learn">View responsible-reporting guidance <span aria-hidden="true">→</span></Link></div>
-        <div className={styles.threatGrid}>{threats.map((threat) => <Link className={styles.threatCard} href={`/learn?threat=${threat.code}`} key={threat.name} aria-label={`View guidance for ${threat.name}`}><div className={styles.threatTitle}><ThreatIcon src={threat.icon} /><h3>{threat.name}</h3></div><p>{threat.text}</p><span className={styles.cardLink}>View guidance <span aria-hidden="true">→</span></span></Link>)}</div>
+        <div className={styles.threatGrid}>{threats.map((threat) => <Link className={styles.threatCard} href={`/learn?threat=${threat.code}`} key={threat.name} aria-label={`View guidance for ${threat.name}`}><div className={styles.threatTitle}><ThreatIcon src={threat.icon} /><h3>{threat.name}</h3></div><p>{threat.text}</p><span className={styles.cardLink}>View guidance <span className={styles.cardArrow} aria-hidden="true">→</span></span></Link>)}</div>
       </section>
 
     </div>

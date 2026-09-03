@@ -1,84 +1,39 @@
-# Epic 1 — Stakeholder roles, ownership and access
+# Epic 1 — Accounts, roles and access
 
-This folder contains the reusable frontend implementation for Epic 1.
+This folder contains login, registration, role management and coordinator case
+access. The related pages are under the admin and coordinator route groups in
+`app/`.
 
-Primary route files:
+## What works now
 
-- `app/(admin)/admin/users/page.tsx`
-- `app/(admin)/admin/users/new/page.tsx`
-- `app/(admin)/admin/role-requests/page.tsx`
-- `app/(admin)/admin/role-requests/[requestId]/page.tsx`
-- `app/(coordinator)/coordinator/report-queue/page.tsx`
-- `app/(coordinator)/coordinator/my-cases/page.tsx`
-- `app/(coordinator)/coordinator/reports/[reportId]/page.tsx`
+- Users can register, log in and log out through the backend.
+- Routes are shown only to the appropriate account role.
+- Administrators can search users, preview account creation and review
+  coordinator access requests.
+- Coordinators can claim a report and view cases assigned to them.
+- Protected case content is hidden when another coordinator owns the case.
 
-## Current frontend behaviour
+The administrator and coordinator records are still prototype data. They are
+kept in `mock-data.ts` and the shared prototype store so the UI can later switch
+to backend responses without being redesigned.
 
-- Search and filter the user directory.
-- Create a local preview account with an Observer, Case Coordinator or System
-  Administrator role without retaining the temporary password in the browser.
-- Change a user role or account status in temporary component state.
-- Review, approve or reject a Case Coordinator access request.
-- Display what coordinator access does and does not grant.
-- Claim an unclaimed report in shared persistent prototype state.
-- Prevent a second coordinator from opening protected case information.
-- Show the active case owner and basic who/what/when activity.
+The frontend uses these backend role codes: `observer`, `case_coordinator` and
+`system_administrator`. `role-catalog.ts` turns them into readable labels.
 
-The demonstration records are in `mock-data.ts`. They are intentionally kept
-outside the page files so they can later be replaced with backend responses.
+## Backend work still needed
 
-`PUBLIC_VISITOR` is not an account role. It describes someone browsing the
-public site without being authenticated. Therefore, it must not appear in the
-administrator user directory, role filter or role-editing controls.
+The backend must enforce roles and ownership even when the frontend hides a
+page or button. It also needs to:
 
-Frontend mock accounts store the same role codes documented by the backend:
+- create administrator-provisioned accounts and hash temporary passwords;
+- save administrator role and account-status changes;
+- claim cases atomically so two coordinators cannot claim the same report;
+- return exact coordinates only to an authorised case owner; and
+- record who performed important actions and when they happened.
 
-- `observer`
-- `case_coordinator`
-- `system_administrator`
+Typed coordinator requests are in `lib/api/coordinatorApi.ts`. Registration
+uses `POST /api/v1/auth/register`, while login sends form fields named
+`username` and `password`. Observer registration requires a password of at
+least six characters and never includes a role selector.
 
-`role-catalog.ts` converts those codes into friendly interface labels. Case mock
-records similarly keep `statusCode` separate from `statusLabel` so later API
-responses can be adopted without changing the visible wording.
-
-## Current integration phase
-
-Login, registration, logout and role-aware route gates are connected through
-`lib/api/authApi.ts`. Coordinator case data and administrator records remain
-mocked because the attached backend contract does not yet define every endpoint
-needed by those screens. See `docs/BACKEND_INTEGRATION_READINESS.md`.
-
-## Backend integration still required
-
-Before production use, the backend must authenticate the user and enforce every
-role and ownership rule. In particular, it must:
-
-- verify the `system_administrator` role before changing accounts;
-- create administrator-provisioned accounts and securely hash temporary passwords;
-- verify the `case_coordinator` role before returning the report queue;
-- perform an atomic claim so two coordinators cannot claim the same case;
-- return exact coordinates only after confirming the active owner;
-- record the acting user, action and server timestamp for key changes; and
-- reject unauthorised requests even if a page or button is hidden in the UI.
-
-The documented integration routes relevant to the existing coordinator screens
-include `GET /api/v1/coordinator/queue`,
-`POST /api/v1/coordinator/reports/{reportReference}/claim`, and
-`GET /api/v1/coordinator/reports/{reportReference}`. These are reference points
-and are implemented as typed adapters in `lib/api/coordinatorApi.ts`.
-
-The latest backend contract adds `POST /api/v1/auth/register`. The registration
-form should send only `email`, `displayName` and `password`, require at least 6
-password characters, and never show or submit a role selector. This updated
-minimum also requires the backend password validator to accept 6-character
-passwords. A successful
-registration creates an `observer` but does not return a token, so the user must
-then log in. Duplicate email uses HTTP 409 and invalid input uses HTTP 422.
-
-Login uses `application/x-www-form-urlencoded` fields
-`username` (the email) and `password`, while the backend document explicitly
-shows both nested and flat success shapes. The adapter normalises either until
-OpenAPI is finalised.
-
-The report queue and case-detail routes are shared with Epic 5. Ownership and
-exact-location access are checked before the review workflow is displayed.
+See `docs/BACKEND_INTEGRATION_READINESS.md` for the full integration list.

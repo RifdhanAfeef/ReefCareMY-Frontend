@@ -1,25 +1,18 @@
-# Epic 5 — Conservation review, triage and routing
+# Epic 5 — Coordinator review and triage
 
-This folder contains the completed frontend coordinator queue and review
-workflow, merged with Epic 1 ownership checks.
+This folder contains the coordinator report queue, ownership checks and case
+review workflow.
 
-Primary route files:
+A coordinator can claim an available report, review its evidence, request more
+information, record a response and close the case with an appropriate reason.
+Reports owned by another coordinator show an access notice instead of protected
+evidence.
 
-- `app/(coordinator)/coordinator/report-queue/page.tsx`
-- `app/(coordinator)/coordinator/my-cases/page.tsx`
-- `app/(coordinator)/coordinator/reports/[reportId]/page.tsx`
+The workflow keeps evidence decisions separate from field verification and
+does not promise that an external organisation will act. It also blocks closure
+reasons that conflict with the recorded assessment.
 
-The detailed route branches safely: unclaimed reports show claim confirmation,
-the current coordinator's reports show the review workflow, reports owned by
-another coordinator show the Epic 1 restriction notice, and unknown references
-show a not-found message.
-
-The workflow records the five questions across evidence usability, credibility,
-related-report checking, response type and closure reason. It blocks closure
-reasons that contradict the recorded assessment/response, requires an outcome
-note and uses backend-compatible status and closure codes. Information requests,
-claims and outcomes update the shared prototype store and My Cases view.
-
-No backend endpoints are called yet. During integration, replace store mutations
-with the documented queue, claim, information-request, decision and close API
-requests while retaining the ownership gate and user-facing status language.
+These actions currently update the shared prototype store. During backend
+integration, replace those updates with the queue, claim, information-request,
+decision and closure API calls while keeping the existing ownership checks and
+observer-friendly status wording.
