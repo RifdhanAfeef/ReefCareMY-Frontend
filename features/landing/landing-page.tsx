@@ -23,14 +23,11 @@ function ThreatIcon({ src }: { src: (typeof threats)[number]["icon"] }) {
 export function LandingPage() {
   const { status, user } = useAuth();
   const signedIn = status === "authenticated";
-  const isObserver = user?.role === "observer";
   const signedInDestination = user?.role === "case_coordinator"
     ? { href: "/coordinator/report-queue", label: "Open report intake" }
     : user?.role === "system_administrator"
       ? { href: "/admin/users", label: "Manage users and access" }
       : { href: "/report-a-reef", label: "Start a reef report" };
-  const reportHref = isObserver ? "/report-a-reef" : "/login?next=/report-a-reef";
-
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
@@ -65,19 +62,8 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className={styles.assurance} aria-label="ReefCare MY benefits">
-        <article><span>01</span><div><strong>Recognise</strong><p>Understand what may be worth reporting.</p></div></article>
-        <article><span>02</span><div><strong>Document</strong><p>Capture useful evidence in a simple form.</p></div></article>
-        <article><span>03</span><div><strong>Follow</strong><p>Track the report through your account.</p></div></article>
-      </section>
-
-      <section className={styles.section} aria-labelledby="threat-heading">
-        <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Supported observations</p><h2 id="threat-heading">Four reef threats you can document</h2></div><Link className={styles.textLink} href="/learn">View responsible-reporting guidance <span aria-hidden="true">→</span></Link></div>
-        <div className={styles.threatGrid}>{threats.map((threat) => <Link className={styles.threatCard} href={`/learn?threat=${threat.code}`} key={threat.name} aria-label={`View guidance for ${threat.name}`}><div className={styles.threatTitle}><ThreatIcon src={threat.icon} /><h3>{threat.name}</h3></div><p>{threat.text}</p><span className={styles.cardLink}>View guidance <span aria-hidden="true">→</span></span></Link>)}</div>
-      </section>
-
       <section className={styles.processSection} aria-labelledby="process-heading">
-        <div className={styles.processIntro}><p className={styles.eyebrow}>A clear reporting journey</p><h2 id="process-heading">From observation to a traceable report</h2><p>You can learn without an account. Sign in as a Registered Observer to create, submit and track a report.</p><Link className={styles.primaryButton} href={signedIn ? signedInDestination.href : reportHref}>{signedIn ? signedInDestination.label : "Log in to start a report"}</Link></div>
+        <div className={styles.processIntro}><p className={styles.eyebrow}>A clear reporting journey</p><h2 id="process-heading">From observation to a traceable report</h2><p>You can learn without an account. Sign in as a Registered Observer to create, submit and track a report.</p></div>
         <ol className={styles.steps}>
           <li><span>1</span><div><h3>Check the guidance</h3><p>Choose the closest threat and observe without touching or disturbing the reef.</p></div></li>
           <li><span>2</span><div><h3>Record what you saw</h3><p>Add photographs, date and time, a short description and safe location details.</p></div></li>
@@ -86,10 +72,11 @@ export function LandingPage() {
         </ol>
       </section>
 
-      <section className={styles.finalCta}>
-        <div><p className={styles.eyebrow}>See something concerning?</p><h2>Start with the guidance, then report only what you can observe safely.</h2></div>
-        <div className={styles.actions}><Link className={styles.primaryButton} href="/learn">Explore the guidance</Link>{signedIn ? <Link className={styles.lightButton} href={signedInDestination.href}>{signedInDestination.label}</Link> : <Link className={styles.lightButton} href="/register">Create an account</Link>}</div>
+      <section className={styles.section} aria-labelledby="threat-heading">
+        <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Supported observations</p><h2 id="threat-heading">Four reef threats you can document</h2></div><Link className={styles.textLink} href="/learn">View responsible-reporting guidance <span aria-hidden="true">→</span></Link></div>
+        <div className={styles.threatGrid}>{threats.map((threat) => <Link className={styles.threatCard} href={`/learn?threat=${threat.code}`} key={threat.name} aria-label={`View guidance for ${threat.name}`}><div className={styles.threatTitle}><ThreatIcon src={threat.icon} /><h3>{threat.name}</h3></div><p>{threat.text}</p><span className={styles.cardLink}>View guidance <span aria-hidden="true">→</span></span></Link>)}</div>
       </section>
+
     </div>
   );
 }

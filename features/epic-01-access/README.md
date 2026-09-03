@@ -68,8 +68,10 @@ include `GET /api/v1/coordinator/queue`,
 and are implemented as typed adapters in `lib/api/coordinatorApi.ts`.
 
 The latest backend contract adds `POST /api/v1/auth/register`. The registration
-form should send only `email`, `displayName` and `password`, require at least 12
-password characters, and never show or submit a role selector. A successful
+form should send only `email`, `displayName` and `password`, require at least 6
+password characters, and never show or submit a role selector. This updated
+minimum also requires the backend password validator to accept 6-character
+passwords. A successful
 registration creates an `observer` but does not return a token, so the user must
 then log in. Duplicate email uses HTTP 409 and invalid input uses HTTP 422.
 

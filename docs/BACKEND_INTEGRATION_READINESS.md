@@ -40,7 +40,7 @@ production build that includes `/admin/users/new`.
 | US1.3 Sensitive information | Observer-owned detail view, coordinator-only precise-location panel, no admin case-detail route | Frontend ready. Exact-location and evidence reads must be filtered by the backend. |
 | US1.4 Traceability | Coordinator activity timeline and who/when UI | UI ready. Backend response needs an activity/history projection to replace mock events. |
 | US1.5 Authentication | Real login, bearer-token client, protected observer routes | Integrated for login. Logout endpoint is documented as planned and still needs backend completion. |
-| US1.6 Registration | Real public observer-only registration; no role selector; 12–128 character password validation; separate protected administrator account-creation form for privileged roles | Public registration is integrated. Administrator provisioning is blocked by the missing administrator API. |
+| US1.6 Registration | Real public observer-only registration; no role selector; minimum 6-character frontend validation; separate protected administrator account-creation form for privileged roles | Backend password validation must be changed from its documented 12-character minimum to 6 before the updated frontend rule is fully integrated. Administrator provisioning is blocked by the missing administrator API. |
 | US2.1 Guidance | Public `/learn` page with four threats, evidence, images and safety reminders | Complete as static frontend content; the optional guidance endpoint is not required. |
 | US2.2 Capture report | Photo validation, backend threat categories, all required fields, optional depth, Unsure category, local draft persistence | Integrated through the reference and multipart submission APIs. Backend reference data must include all five form choices. |
 | US2.3 Review/submit | Review summary, protected-location summary, real multipart submit and API confirmation | Integrated. The backend owns persistence, reference generation, submission time and initial Received status. |
@@ -110,7 +110,7 @@ The frontend route `/admin/users/new` now collects:
 - `displayName` — required, maximum 100 characters;
 - `email` — required and unique;
 - `role` — one of `observer`, `case_coordinator` or `system_administrator`;
-- `temporaryPassword` — required, 12–128 characters; and
+- `temporaryPassword` — required, minimum 6 characters; and
 - password confirmation — frontend-only and never submitted as a separate
   stored credential.
 
@@ -185,8 +185,9 @@ Before the frontend can be marked fully integrated, verify all of the following:
   results in the `observer` role.
 - Privileged accounts are provisioned only through the protected administrator
   workflow; the public Register page does not expose a role field.
-- Password length remains 12–128 characters, with at least four distinct
-  characters enforced by the backend.
+- The frontend password minimum is 6 characters. The current backend document
+  still specifies 12–128 characters and at least four distinct characters, so
+  the backend contract and validator must be updated to accept the new minimum.
 - Precise coordinates are sent only when an observer supplies a map pin.
 - Threat category and named-site database IDs come only from backend reference
   responses; the submission flow does not rely on frontend seed IDs.

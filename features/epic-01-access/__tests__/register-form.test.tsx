@@ -64,7 +64,7 @@ async function fillForm(
 }
 
 describe("Register — submission is disabled for invalid input", () => {
-  it("disables the submit button while the password is shorter than 12 characters", async () => {
+  it("disables the submit button while the password is shorter than 6 characters", async () => {
     renderForm();
     const user = userEvent.setup();
     await fillForm(user, { password: "short" });

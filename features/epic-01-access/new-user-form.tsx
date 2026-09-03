@@ -133,7 +133,7 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
             required
           />
           <span className={styles.fieldHelp} id="new-user-password-help">
-            {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters.
+            Minimum {MIN_PASSWORD_LENGTH} characters
           </span>
         </div>
 

@@ -100,7 +100,7 @@ describe("apiRequest — error message extraction", () => {
       jsonResponse(
         {
           detail: [
-            { loc: ["body", "password"], msg: "String should have at least 12 characters" },
+            { loc: ["body", "password"], msg: "String should have at least 6 characters" },
           ],
         },
         422,
@@ -108,7 +108,7 @@ describe("apiRequest — error message extraction", () => {
     );
 
     await expect(apiRequest({ path: "/api/v1/auth/register" })).rejects.toThrow(
-      "String should have at least 12 characters",
+      "String should have at least 6 characters",
     );
   });
 

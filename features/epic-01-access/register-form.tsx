@@ -105,7 +105,7 @@ export function RegisterForm() {
           id="register-password-hint"
           className={passwordTooShort ? styles.hintError : styles.hint}
         >
-          {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters.
+          Minimum {MIN_PASSWORD_LENGTH} characters
         </span>
       </div>
 
