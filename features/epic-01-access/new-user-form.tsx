@@ -69,6 +69,12 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
         </p>
       </div>
 
+      <section className={styles.notice} role="status">
+        <strong>Frontend preview only</strong>
+        The backend has no administrator account-creation endpoint yet. Submitting
+        this form adds a password-free preview record to this browser only.
+      </section>
+
       <div className={styles.formGrid}>
         <div className={styles.field}>
           <label htmlFor="new-user-name">Display name</label>

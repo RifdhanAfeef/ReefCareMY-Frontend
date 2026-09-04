@@ -5,9 +5,12 @@ export const metadata: Metadata = { title: "Review report" };
 
 export default async function CoordinatorReportDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ reportId: string }>;
+  searchParams: Promise<{ claim?: string }>;
 }) {
   const { reportId } = await params;
-  return <CoordinatorCaseRoute reportReference={reportId} />;
+  const { claim } = await searchParams;
+  return <CoordinatorCaseRoute reportReference={reportId} startWithClaim={claim === "1"} />;
 }

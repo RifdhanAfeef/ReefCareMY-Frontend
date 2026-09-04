@@ -41,14 +41,17 @@ Folders in parentheses organise routes without changing the URL. For example,
 ## Backend connection
 
 Authentication, reference data, Dive Sessions, report submission and observer
-report tracking are connected to the FastAPI backend. Some coordinator and
-administrator actions still use prototype data while the remaining backend
-endpoints are completed.
+report tracking are connected to the FastAPI backend. The coordinator queue,
+claim, owned-case detail, information request, response decision and closure
+flows are also connected. Coordinator “My Cases” and administrator actions are
+clearly marked as unavailable or preview-only because their backend endpoints
+have not been defined.
 
-Temporary prototype data is stored in the browser. Normal records use
-`localStorage`, while draft photographs use IndexedDB. The backend must remain
-responsible for authentication, permissions, private evidence, exact locations
-and permanent storage.
+Unsubmitted report and location drafts are stored in the browser, while draft
+photographs use IndexedDB. Administrator preview records also use local storage
+until an administrator API exists. The backend remains responsible for
+authentication, permissions, private evidence, exact locations and permanent
+records.
 
 Current account roles are:
 

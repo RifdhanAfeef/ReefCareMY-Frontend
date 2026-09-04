@@ -14,9 +14,10 @@ authorisation tests also pass.
 
 ## Current verdict
 
-The project is ready to **begin** backend integration. It is not yet ready for
-production release or final acceptance testing because several coordinator and
-administrator contracts are missing from the supplied backend documentation.
+The documented observer flows and core coordinator case workflow are connected
+to the backend. The project is not yet ready for production release or final
+acceptance testing because several coordinator and administrator contracts are
+still missing from the supplied backend documentation.
 
 | Area | Current state | Next integration action |
 | --- | --- | --- |
@@ -24,11 +25,11 @@ administrator contracts are missing from the supplied backend documentation.
 | Authentication and observer registration | Partially integrated | Confirm the final login response, complete logout and test real role-bearing accounts. |
 | Observer reporting and Dive Sessions | Integration-ready | Connect to the deployed API and run the complete observer submission path. |
 | Observer My Reports and timeline | Integration-ready | Verify the observer-safe response shapes and cross-account access controls. |
-| Coordinator workspace | Queue integrated; remaining workflow backend-blocked in places | Complete My Cases, evidence, evidence-assessment and history contracts before replacing the remaining prototype case records. |
+| Coordinator workspace | Core workflow integrated; three contracts still missing | Add My Cases, evidence-assessment and history contracts. The queue, claim, owned detail, information request, decision and closure flows use the backend. |
 | Administrator workspace | UI ready, backend-blocked | Define account creation, directory, role/status update and access-request APIs. |
 
-The frontend verification baseline is currently 16 passing test files
-containing 56 tests, a clean TypeScript check, clean ESLint and a successful
+The frontend verification baseline is currently 18 passing test files
+containing 63 tests, a clean TypeScript check, clean ESLint and a successful
 production build that includes `/admin/users/new`.
 
 ## Readiness summary
@@ -36,20 +37,20 @@ production build that includes `/admin/users/new`.
 | Story | Frontend evidence | Integration state |
 | --- | --- | --- |
 | US1.1 Role separation | Public, observer, coordinator and administrator route groups; `RequireRole` gates all protected groups; `/admin/users/new` allows an administrator to prepare an Observer, Case Coordinator or System Administrator account | Frontend ready. Account creation is a local preview until the administrator API exists; the backend must enforce every role dependency. |
-| US1.2 Single owner | Queue, claim screen, ownership notice, owner display; typed claim adapter | UI and contract ready. Atomicity remains a backend/database responsibility. |
+| US1.2 Single owner | Backend queue, claim operation, owned-case detail and owner display | Integrated. Atomicity remains a backend/database responsibility and must be concurrency-tested. |
 | US1.3 Sensitive information | Observer-owned detail view, coordinator-only precise-location panel, no admin case-detail route | Frontend ready. Exact-location and evidence reads must be filtered by the backend. |
-| US1.4 Traceability | Coordinator activity timeline and who/when UI | UI ready. Backend response needs an activity/history projection to replace mock events. |
+| US1.4 Traceability | Decision and closure responses contain server timestamps and actor IDs | Partially integrated. A coordinator case-history projection is still needed to display complete activity. |
 | US1.5 Authentication | Real login, bearer-token client, protected observer routes | Integrated for login. Logout endpoint is documented as planned and still needs backend completion. |
 | US1.6 Registration | Real public observer-only registration; no role selector; minimum 6-character frontend validation; separate protected administrator account-creation form for privileged roles | Backend password validation must be changed from its documented 12-character minimum to 6 before the updated frontend rule is fully integrated. Administrator provisioning is blocked by the missing administrator API. |
 | US2.1 Guidance | Public `/learn` page with four threats, evidence, images and safety reminders | Complete as static frontend content; the optional guidance endpoint is not required. |
 | US2.2 Capture report | Photo validation, backend threat categories, all required fields, optional depth, Unsure category, local draft persistence | Integrated through the reference and multipart submission APIs. Backend reference data must include all five form choices. |
 | US2.3 Review/submit | Review summary, protected-location summary, real multipart submit and API confirmation | Integrated. The backend owns persistence, reference generation, submission time and initial Received status. |
 | US4.1 Safe location | Backend Dive Session selection/creation, named site, optional interactive pin, confidence and privacy review | Integrated. Current backend contract requires `diveDate`; the UI labels and validates it as required. |
-| US5.1 Queue/claim | Paginated backend queue with loading, retry and page controls; claim screen and typed claim adapter | Queue list integrated. Claim and case-detail screens still require the remaining workflow integration. |
-| US5.2 Review details | Evidence, description, time, depth, confidence and exact-location layout | UI ready, but blocked by incomplete backend case/evidence response contracts listed below. |
-| US5.3 Evidence usability | Needs-more-information branch and 500-character reason limit | UI and information-request adapter ready. Evidence-accepted transition contract is missing. |
-| US5.4 Response type | Monitoring, referral/share and intervention options; typed decision adapter | UI and contract ready. |
-| US5.5 Closure | Exactly one compatible fixed reason, required note, observer wording; typed close adapter | UI and contract ready. |
+| US5.1 Queue/claim | Paginated backend queue with loading, retry and page controls; atomic claim followed by owned-case loading | Integrated. |
+| US5.2 Review details | Backend evidence metadata, description, optional observation time, depth and protected exact location | Integrated to the documented case response. Private evidence delivery and missing `observedAt` remain backend contract gaps. |
+| US5.3 Evidence usability | Real information request with selected missing items and a combined 500-character reason | Information-request path integrated. A separate evidence-accepted transition is still missing. |
+| US5.4 Response type | Monitoring, referral/share and intervention options saved through the decision endpoint | Integrated. |
+| US5.5 Closure | Exactly one compatible fixed reason and required public note saved through the close endpoint | Integrated. |
 | US6.1 Confirmation | Real report-reference/status/location/submission response shape and confirmation view | API tracking and confirmation boundary ready. |
 | US6.2 Status tracking | Real My Reports, observer-safe detail and timeline API calls | Integrated. Labels render exactly as returned by the backend. |
 | US6.3 Information request | Observer detail displays “More information needed” and the safe reason | Integrated when the backend returns `informationRequestReason`. |
@@ -84,7 +85,8 @@ These are not safe for the frontend to invent:
    are not retained in browser storage.
 2. **Coordinator “My cases” is absent.** The UI needs a server-filtered list of
    cases owned by the authenticated coordinator. `GET /coordinator/queue` is
-   documented as the unclaimed queue only.
+   documented as the unclaimed queue only. The page now shows an unavailable
+   state instead of mock cases.
 3. **Evidence assessment transition is absent.** There is an information-request
    endpoint and a response-type decision endpoint, but no documented operation
    that records evidence usability/credibility and moves a case to
@@ -145,8 +147,8 @@ frontend route must be added to the contract; none is currently documented.
    redirects with real tokens.
 4. Smoke-test the connected observer path: reference data → Dive Session →
    multipart report submit → confirmation → My Reports/timeline.
-5. Replace coordinator prototype state only after queue, owned-case, evidence,
-   evidence-assessment, history and My Cases contracts are complete.
+5. Add coordinator-owned case listing, evidence-assessment and history contracts;
+   the documented queue and case mutation endpoints are already connected.
 6. Add `adminApi.ts` only after administrator contracts exist, then replace the
    browser-local account directory and creation preview with server responses.
 7. Verify that public registration can create only observers while the protected

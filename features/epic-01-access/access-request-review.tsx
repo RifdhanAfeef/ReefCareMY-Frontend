@@ -38,13 +38,12 @@ export function AccessRequestReview({ request }: { request: AccessRequest }) {
             : `Coordinator access was not approved`}
         </h2>
         <p className={styles.sectionDescription}>
-          {approved
-            ? "Access becomes effective after the backend saves this role change."
-            : `${request.userName} remains a ${getUserRoleLabel(request.currentRole)}.`}
+          This is a frontend preview only. No backend role or account permission
+          was changed.
         </p>
 
         <div className={styles.traceRecord}>
-          <strong>Traceability record</strong>
+          <strong>Preview traceability record</strong>
           <div className={styles.summaryRow}>
             <span>Changed by: Admin User</span>
             <span>28/08/2026, 2:40 PM</span>
@@ -67,6 +66,11 @@ export function AccessRequestReview({ request }: { request: AccessRequest }) {
   return (
     <div className={styles.reviewGrid}>
       <section className={styles.detailCard} aria-labelledby="request-title">
+        <div className={styles.notice} role="status">
+          <strong>Administrator API not available</strong>
+          Approve and reject actions demonstrate the intended workflow but do not
+          update a backend account.
+        </div>
         <h2 className={styles.sectionHeading} id="request-title">
           Access request
         </h2>

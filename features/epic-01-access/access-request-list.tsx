@@ -8,9 +8,9 @@ export function AccessRequestList({ requests }: { requests: AccessRequest[] }) {
   return (
     <div className={styles.stack}>
       <section className={styles.notice}>
-        <strong>Coordinator access does not provide unrestricted access.</strong>
-        A coordinator can view sensitive case information only after becoming the
-        active owner of that report.
+        <strong>Administrator API not available</strong>
+        These access requests are prototype records. Reviews cannot be saved to the
+        backend until list, approve and reject endpoints are defined.
       </section>
 
       <section className={styles.tableCard} aria-label="Coordinator access requests">

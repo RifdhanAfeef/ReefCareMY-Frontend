@@ -67,6 +67,11 @@ export function UserDirectory({ initialUsers }: UserDirectoryProps) {
 
   return (
     <div className={styles.stack}>
+      <section className={styles.notice} role="status">
+        <strong>Administrator API not available</strong>
+        This directory contains prototype records. Search and edit controls are a
+        frontend preview and do not change backend accounts.
+      </section>
       <section className={styles.card} aria-labelledby="directory-title">
         <div className={styles.toolbar}>
           <div>

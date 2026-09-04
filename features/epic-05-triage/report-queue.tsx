@@ -171,7 +171,7 @@ export function ReportQueue() {
                         <td>
                           <Link
                             className={styles.tableLink}
-                            href={`/coordinator/reports/${report.reportReference}`}
+                            href={`/coordinator/reports/${report.reportReference}?claim=1`}
                           >
                             Review and claim
                             <span className="sr-only"> {report.reportReference}</span>
