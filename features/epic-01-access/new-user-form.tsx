@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MAX_DISPLAY_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/api/authApi";
+import { MAX_DISPLAY_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_DISTINCT_PASSWORD_CHARACTERS, MIN_PASSWORD_LENGTH, passwordMeetsRequirements } from "@/lib/api/authApi";
 import { userRoleOptions } from "./role-catalog";
 import { readCreatedUsers, saveCreatedUser } from "./admin-user-storage";
 import type { UserAccount, UserRoleCode } from "./types";
@@ -31,7 +31,7 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
   );
   const displayNameValid = displayName.trim().length > 0 && displayName.trim().length <= MAX_DISPLAY_NAME_LENGTH;
   const emailValid = EMAIL_PATTERN.test(normalizedEmail) && !emailAlreadyExists;
-  const passwordValid = password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
+  const passwordValid = passwordMeetsRequirements(password);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
   const canSubmit = displayNameValid && emailValid && passwordValid && passwordsMatch;
 
@@ -139,7 +139,7 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
             required
           />
           <span className={styles.fieldHelp} id="new-user-password-help">
-            Minimum {MIN_PASSWORD_LENGTH} characters
+            {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters with at least {MIN_DISTINCT_PASSWORD_CHARACTERS} different characters
           </span>
         </div>
 

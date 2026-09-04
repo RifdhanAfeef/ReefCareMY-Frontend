@@ -41,11 +41,18 @@ Folders in parentheses organise routes without changing the URL. For example,
 ## Backend connection
 
 Authentication, reference data, Dive Sessions, report submission and observer
-report tracking are connected to the FastAPI backend. The coordinator queue,
-claim, owned-case detail, information request, response decision and closure
-flows are also connected. Coordinator “My Cases” and administrator actions are
-clearly marked as unavailable or preview-only because their backend endpoints
-have not been defined.
+report tracking are connected to the FastAPI backend. Observer My Reports is
+paginated, so it is not limited to the first 20 records.
+
+The coordinator queue can display claimed and unclaimed reports, owners and
+statuses. The current backend queue endpoint still returns only unclaimed
+reports, so the backend contract must be expanded before claimed cases can stay
+visible there. Claim, owned-case detail, information request, supported response
+decisions and closure calls are connected. “My Cases” can reopen reports claimed
+through the current browser by verifying each saved reference with the existing
+owned-case detail endpoint. A complete cross-device list still needs a backend
+owned-cases endpoint. Administrator actions remain preview-only because their
+backend endpoints have not been defined.
 
 Unsubmitted report and location drafts are stored in the browser, while draft
 photographs use IndexedDB. Administrator preview records also use local storage

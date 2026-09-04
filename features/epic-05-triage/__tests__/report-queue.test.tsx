@@ -10,6 +10,7 @@ const mockedGetCoordinatorQueue = vi.mocked(coordinatorApi.getCoordinatorQueue);
 
 beforeEach(() => {
   mockedGetCoordinatorQueue.mockReset();
+  window.localStorage.clear();
 });
 
 function resultOf(
@@ -79,7 +80,49 @@ describe("Coordinator report queue", () => {
     expect(await screen.findByText("Unable to reach the coordinator API.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
-    expect(await screen.findByText("No reports are waiting")).toBeInTheDocument();
+    expect(await screen.findByText("No reports were returned")).toBeInTheDocument();
     expect(mockedGetCoordinatorQueue).toHaveBeenCalledTimes(2);
+  });
+
+  it("renders claimed reports and lets the current owner reopen their case", async () => {
+    window.localStorage.setItem("reefcare.auth", JSON.stringify({
+      accessToken: "coordinator-token",
+      user: { id: 8, displayName: "Current Coordinator", role: "case_coordinator" },
+    }));
+    mockedGetCoordinatorQueue.mockResolvedValue(resultOf([
+      {
+        ...report,
+        statusCode: "claimed",
+        statusLabel: "Claimed",
+        owner: { id: 8, displayName: "Current Coordinator" },
+        claimedAt: "2026-09-04T03:00:00Z",
+      },
+      {
+        ...report,
+        reportReference: "RC-1002",
+        statusCode: "under_review",
+        statusLabel: "Under Review",
+        owner: { id: 9, displayName: "Another Coordinator" },
+        claimedAt: "2026-09-04T03:10:00Z",
+      },
+    ]));
+
+    render(<ReportQueue />);
+
+    expect(await screen.findByRole("link", { name: "View claimed case RC-1001" })).toHaveAttribute(
+      "href",
+      "/coordinator/reports/RC-1001",
+    );
+    expect(screen.getByText("Another Coordinator")).toBeInTheDocument();
+    expect(screen.getByText("Under Review")).toBeInTheDocument();
+  });
+
+  it("explains when the backend still returns the unclaimed-only response shape", async () => {
+    mockedGetCoordinatorQueue.mockResolvedValue(resultOf([report]));
+
+    render(<ReportQueue />);
+
+    expect(await screen.findByText("The backend is still returning the old unclaimed-only queue shape")).toBeInTheDocument();
+    expect(screen.getByText(/Claimed reports cannot appear until this endpoint returns/)).toBeInTheDocument();
   });
 });

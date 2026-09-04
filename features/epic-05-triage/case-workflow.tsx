@@ -9,7 +9,8 @@ import {
   recordCaseDecision,
   requestMoreInformation,
 } from "@/lib/api/coordinatorApi";
-import type { ClosureReasonCode, CoordinatorCase, ResponseType } from "@/lib/api/types";
+import type { ClaimedCase, ClosureReasonCode, CoordinatorCase, ResponseType } from "@/lib/api/types";
+import { rememberClaimedCase } from "@/lib/api/claimed-case-store";
 import { formatDateTime } from "@/lib/format/date";
 import { closureReasons, type ReviewOutcome } from "./triage-data";
 import styles from "./triage.module.css";
@@ -82,6 +83,7 @@ export function CoordinatorCaseRoute({ reportReference, startWithClaim = false }
   const [report, setReport] = useState<CoordinatorCase | null>(null);
   const [error, setError] = useState("");
   const [claiming, setClaiming] = useState(false);
+  const [claimConfirmation, setClaimConfirmation] = useState<ClaimedCase | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -103,8 +105,19 @@ export function CoordinatorCaseRoute({ reportReference, startWithClaim = false }
     setClaiming(true);
     setError("");
     try {
-      await claimReport(reportReference);
-      const caseRecord = await getCoordinatorCase(reportReference);
+      const claimedCase = await claimReport(reportReference);
+      rememberClaimedCase(claimedCase);
+      setClaimConfirmation(claimedCase);
+
+      let caseRecord: CoordinatorCase;
+      try {
+        caseRecord = await getCoordinatorCase(reportReference);
+      } catch (requestError) {
+        setError(`The report was claimed successfully, but its details could not be loaded. ${errorMessage(requestError, "Try loading the owned case again.")}`);
+        setRouteState("error");
+        return;
+      }
+
       if (window.location.protocol !== "about:") {
         window.history.replaceState(
           window.history.state,
@@ -145,10 +158,10 @@ export function CoordinatorCaseRoute({ reportReference, startWithClaim = false }
     <section className={styles.card}><div className={styles.errorBox} role="alert"><strong>Unable to open report {reportReference}</strong><p>{error}</p></div><div className={styles.actions}><Link className={styles.secondaryButton} href="/coordinator/report-queue">Return to report queue</Link><button className={styles.primaryButton} type="button" onClick={() => { setRouteState("loading"); setError(""); setReloadKey((value) => value + 1); }}>Try again</button></div></section>
   </section>;
 
-  return <CaseWorkflow report={report} refreshCase={refreshCase} />;
+  return <CaseWorkflow report={report} refreshCase={refreshCase} claimConfirmation={claimConfirmation} />;
 }
 
-function CaseWorkflow({ report, refreshCase }: { report: CoordinatorCase; refreshCase: () => Promise<CoordinatorCase> }) {
+function CaseWorkflow({ report, refreshCase, claimConfirmation }: { report: CoordinatorCase; refreshCase: () => Promise<CoordinatorCase>; claimConfirmation: ClaimedCase | null }) {
   const [stage, setStage] = useState<Stage>("detail");
   const [usable, setUsable] = useState<EvidenceAnswer>("");
   const [credible, setCredible] = useState<EvidenceAnswer>("");
@@ -181,7 +194,10 @@ function CaseWorkflow({ report, refreshCase }: { report: CoordinatorCase; refres
     if (!usable || (usable === "yes" && (!credible || !duplicate))) { setAssessmentError("Answer all required evidence questions before continuing."); return; }
     setAssessmentError("");
     if (usable === "no") { setReviewOutcome(null); setStage("request"); return; }
-    if (credible === "no") { setReviewOutcome("not_substantiated"); setClosureReason("not_substantiated"); setClosureNote("The available evidence did not support the reported threat on desk review."); setStage("close"); return; }
+    if (credible === "no") {
+      setAssessmentError("A Not Substantiated outcome cannot be saved yet because the backend does not expose an evidence-assessment decision endpoint. Keep the case open or request more information until that endpoint is available.");
+      return;
+    }
     setStage("response");
   }
 
@@ -256,15 +272,17 @@ function CaseWorkflow({ report, refreshCase }: { report: CoordinatorCase; refres
 
   const exactLocation = report.preciseLocation?.latitude != null && report.preciseLocation.longitude != null ? `${report.preciseLocation.latitude.toFixed(6)}, ${report.preciseLocation.longitude.toFixed(6)}` : "No exact coordinates were submitted";
   const uncertainty = report.preciseLocation?.uncertaintyMetres != null ? `Estimated uncertainty: ${report.preciseLocation.uncertaintyMetres} m` : null;
+  const decisionReady = ["under_review", "evidence_accepted", "monitoring", "referred"].includes(report.statusCode);
 
   if (stage === "detail") return <section className={styles.page}>
     <Heading eyebrow={`My Cases / ${report.reportReference}`} title="Review reef observation" description="Review the submitted evidence, observation details and protected location before making a decision." />
     <span className={styles.ownerChip}>Owned by {report.owner.displayName}</span>
+    {claimConfirmation && <div className={styles.successBox} role="status"><strong>{claimConfirmation.statusLabel}: report assigned successfully</strong><p>Claimed at {displayDateTime(claimConfirmation.claimedAt)}. The all-reports queue will retain it and show its owner when the backend returns claimed reports.</p></div>}
     <div className={styles.reviewGrid}><section className={styles.card}>
       <h2>Submitted evidence</h2><p className={styles.muted}>Observer-provided evidence returned by the coordinator API.</p><EvidenceRecords evidence={report.evidence} />
       <dl className={styles.detailList}><div><dt>Threat type</dt><dd>{report.threat}</dd></div><div><dt>Observed</dt><dd>{displayDateTime(report.observedAt)}</dd></div><div><dt>Estimated depth</dt><dd>{report.estimatedDepthMetres == null ? "Not provided" : `${report.estimatedDepthMetres} m`}</dd></div><div><dt>Description</dt><dd>{report.description}</dd></div><div><dt>General area</dt><dd>{report.area}</dd></div><div><dt>Submitted</dt><dd>{displayDateTime(report.submittedAt)}</dd></div></dl>
       <div className={styles.protectedBox}><strong>Authorised exact location</strong><p>{exactLocation}</p>{uncertainty && <small>{uncertainty}</small>}</div>
-    </section><aside className={styles.sidePanel}><h2>Case control</h2><dl className={styles.detailList}><div><dt>Active owner</dt><dd>{report.owner.displayName}</dd></div><div><dt>Status</dt><dd>{report.statusLabel}</dd></div></dl><div className={styles.infoBox}><strong>Review type</strong><p>Your assessment is a desk review, not an on-site confirmation.</p></div><button className={styles.primaryButton} type="button" onClick={() => setStage("assess")}>Start evidence assessment</button><button className={styles.secondaryButton} type="button" onClick={beginInfoRequest}>Request more information</button></aside></div>
+    </section><aside className={styles.sidePanel}><h2>Case control</h2><dl className={styles.detailList}><div><dt>Active owner</dt><dd>{report.owner.displayName}</dd></div><div><dt>Status</dt><dd>{report.statusLabel}</dd></div></dl><div className={styles.infoBox}><strong>Review type</strong><p>Your assessment is a desk review, not an on-site confirmation.</p></div>{!decisionReady && <div className={styles.warningBox} role="status"><strong>Waiting for Under Review status</strong><p>The decision endpoint accepts only reviewed cases. The backend must transition this case from {report.statusCode} before a decision can be recorded.</p></div>}<button className={styles.primaryButton} type="button" onClick={() => setStage("assess")} disabled={!decisionReady}>Start evidence assessment</button><button className={styles.secondaryButton} type="button" onClick={beginInfoRequest}>Request more information</button></aside></div>
   </section>;
 
   if (stage === "assess") return <section className={styles.page}>
@@ -274,7 +292,7 @@ function CaseWorkflow({ report, refreshCase }: { report: CoordinatorCase; refres
       <fieldset className={styles.radioGroup} disabled={usable !== "yes"}><legend>2. Does the evidence plausibly support the reported threat?</legend><label><input type="radio" name="credible" checked={credible === "yes"} onChange={() => setCredible("yes")} />Yes — continue to a response decision</label><label><input type="radio" name="credible" checked={credible === "no"} onChange={() => setCredible("no")} />No — prepare a Not Substantiated closure</label></fieldset>
       <fieldset className={styles.radioGroup} disabled={usable !== "yes"}><legend>3. Does this appear related to an existing report?</legend><label><input type="radio" name="duplicate" checked={duplicate === "no"} onChange={() => setDuplicate("no")} />No matching report found</label><label><input type="radio" name="duplicate" checked={duplicate === "yes"} onChange={() => setDuplicate("yes")} />Yes — include the relationship in the decision note</label><label><input type="radio" name="duplicate" checked={duplicate === "unsure"} onChange={() => setDuplicate("unsure")} />Unsure — note the uncertainty</label></fieldset>
       <label className={styles.field}>Decision note <span>Included with the response decision</span><textarea value={decisionNote} onChange={(event) => setDecisionNote(event.target.value)} /></label>{assessmentError && <p className={styles.errorText} role="alert">{assessmentError}</p>}<div className={styles.actions}><button className={styles.secondaryButton} type="button" onClick={() => setStage("detail")}>Back to case</button><button className={styles.primaryButton} type="submit">Continue</button></div>
-    </section><aside className={styles.sidePanel}><h2>How this is saved</h2><div className={styles.warningBox}><strong>Assessment endpoint pending</strong><p>The backend has no separate evidence-assessment operation. This checklist is included in the next saved decision, information request or closure.</p></div></aside></form>
+    </section><aside className={styles.sidePanel}><h2>How this is saved</h2><div className={styles.warningBox}><strong>Assessment endpoint pending</strong><p>The backend has no separate evidence-assessment operation. A positive checklist can be included in the next response decision, but a Not Substantiated result cannot be safely closed until the backend can record that assessment first.</p></div></aside></form>
   </section>;
 
   if (stage === "request") return <section className={styles.page}>

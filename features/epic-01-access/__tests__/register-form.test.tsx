@@ -64,10 +64,18 @@ async function fillForm(
 }
 
 describe("Register — submission is disabled for invalid input", () => {
-  it("disables the submit button while the password is shorter than 6 characters", async () => {
+  it("disables the submit button while the password is shorter than 12 characters", async () => {
     renderForm();
     const user = userEvent.setup();
     await fillForm(user, { password: "short" });
+
+    expect(screen.getByRole("button", { name: /create account/i })).toBeDisabled();
+  });
+
+  it("disables the submit button when the password has fewer than four distinct characters", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user, { password: "aaaaaaaaaaaa" });
 
     expect(screen.getByRole("button", { name: /create account/i })).toBeDisabled();
   });

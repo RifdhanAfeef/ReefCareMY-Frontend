@@ -12,14 +12,21 @@ The workflow keeps evidence decisions separate from field verification and
 does not promise that an external organisation will act. It also blocks closure
 reasons that conflict with the recorded assessment.
 
-The report queue loads the backend's paginated unclaimed-report endpoint with
-loading, error, retry and page controls. Claiming a report then loads its
-protected case detail from the backend. Information requests, response decisions
-and closure outcomes are also saved through the documented coordinator API.
+The report queue is designed as an all-reports view with status, owner, search,
+site and pagination controls. It can render both claimed and unclaimed reports,
+but the latest backend document still defines the endpoint as unclaimed-only.
+The backend must return every submitted report, including `statusCode`, `owner`
+and `claimedAt`, before claimed cases can remain visible in this queue.
 
-The backend contract still has three coordinator gaps: it does not list cases
-owned by the signed-in coordinator, define a separate evidence-assessment
-transition, or provide a case activity/history response. The interface does not
-invent those requests. Evidence checklist answers are included in the next real
-decision, request or closure, and the “My Cases” page explains why a live list is
-not available.
+Claiming a report loads its protected case detail from the backend and shows the
+claim confirmation. Information requests, response decisions and valid closure
+outcomes are also saved through the documented coordinator API.
+
+The backend contract still has several coordinator gaps: an all-reports queue,
+a complete list of cases owned by the signed-in coordinator, a transition from `claimed`
+to `under_review`, a separate evidence-assessment decision and case history.
+The interface does not invent those requests. It disables decision controls
+while a case is only `claimed`, and it does not pretend a Not Substantiated
+closure was saved without the required assessment operation. As a temporary
+bridge, a successful claim is saved for the current coordinator on that device;
+“My Cases” then verifies each reference with the real owned-case detail endpoint.

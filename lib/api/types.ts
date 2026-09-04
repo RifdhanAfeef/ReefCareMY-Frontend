@@ -186,9 +186,12 @@ export type CoordinatorQueueItem = {
   reportReference: string;
   threat: string;
   area: string;
+  statusCode?: ReportStatusCode;
   statusLabel: string;
   submittedAt: string;
-  hoursInQueue: number;
+  hoursInQueue?: number;
+  owner?: CaseOwner | null;
+  claimedAt?: string | null;
 };
 
 export type CoordinatorQueueResult = {

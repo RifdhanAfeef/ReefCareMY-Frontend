@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MyReportsList } from "../my-reports-list";
 import * as reportsApi from "@/lib/api/reportsApi";
 import type { MyReportsResult } from "@/lib/api/types";
@@ -11,8 +12,8 @@ beforeEach(() => {
   mockedGetMyReports.mockReset();
 });
 
-function resultOf(items: MyReportsResult["items"]): MyReportsResult {
-  return { items, page: 1, pageSize: 20, total: items.length };
+function resultOf(items: MyReportsResult["items"], page = 1, total = items.length): MyReportsResult {
+  return { items, page, pageSize: 20, total };
 }
 
 describe("US6.2 AC1 — observer sees their own reports", () => {
@@ -44,6 +45,21 @@ describe("US6.2 AC1 — observer sees their own reports", () => {
 
     expect(await screen.findByText("RC-0001")).toBeInTheDocument();
     expect(screen.getByText("RC-0002")).toBeInTheDocument();
+    expect(mockedGetMyReports).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
+  });
+
+  it("loads later pages instead of stopping after the first 20 reports", async () => {
+    const user = userEvent.setup();
+    mockedGetMyReports
+      .mockResolvedValueOnce(resultOf([{ reportReference: "RC-0020", threatCategory: "Marine debris", generalLocation: "Reef A", status: "received", statusLabel: "Received", outcome: null, submittedAt: "2026-08-25T04:40:00Z" }], 1, 21))
+      .mockResolvedValueOnce(resultOf([{ reportReference: "RC-0021", threatCategory: "Coral bleaching", generalLocation: "Reef B", status: "received", statusLabel: "Received", outcome: null, submittedAt: "2026-08-26T04:40:00Z" }], 2, 21));
+
+    render(<MyReportsList />);
+    expect(await screen.findByText("RC-0020")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(await screen.findByText("RC-0021")).toBeInTheDocument();
+    expect(mockedGetMyReports).toHaveBeenLastCalledWith({ page: 2, pageSize: 20 });
   });
 });
 

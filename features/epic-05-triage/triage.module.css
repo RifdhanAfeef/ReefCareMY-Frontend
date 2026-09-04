@@ -99,7 +99,7 @@
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) minmax(180px, 1fr);
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(170px, 1fr));
   gap: 12px;
   margin: 22px 0;
 }
@@ -144,24 +144,26 @@
 
 .tableWrap table {
   width: 100%;
-  min-width: 760px;
+  min-width: 920px;
   border-collapse: collapse;
   table-layout: fixed;
   background: #fff;
 }
 
 .tableWrap th:nth-child(1),
-.tableWrap td:nth-child(1) { width: 15%; }
+.tableWrap td:nth-child(1) { width: 14%; }
 .tableWrap th:nth-child(2),
-.tableWrap td:nth-child(2) { width: 18%; }
+.tableWrap td:nth-child(2) { width: 16%; }
 .tableWrap th:nth-child(3),
-.tableWrap td:nth-child(3) { width: 17%; }
+.tableWrap td:nth-child(3) { width: 15%; }
 .tableWrap th:nth-child(4),
-.tableWrap td:nth-child(4) { width: 19%; }
+.tableWrap td:nth-child(4) { width: 16%; }
 .tableWrap th:nth-child(5),
-.tableWrap td:nth-child(5) { width: 16%; }
+.tableWrap td:nth-child(5) { width: 11%; }
 .tableWrap th:nth-child(6),
-.tableWrap td:nth-child(6) { width: 15%; }
+.tableWrap td:nth-child(6) { width: 14%; }
+.tableWrap th:nth-child(7),
+.tableWrap td:nth-child(7) { width: 14%; }
 
 .tableWrap th,
 .tableWrap td {
@@ -747,7 +749,8 @@
   .tableWrap td:nth-child(3)::before { content: "Site"; }
   .tableWrap td:nth-child(4)::before { content: "Status"; }
   .tableWrap td:nth-child(5)::before { content: "Waiting"; }
-  .tableWrap td:nth-child(6)::before { content: "Action"; }
+  .tableWrap td:nth-child(6)::before { content: "Owner"; }
+  .tableWrap td:nth-child(7)::before { content: "Action"; }
 
   .tableWrap th,
   .tableWrap td {

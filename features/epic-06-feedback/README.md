@@ -13,3 +13,6 @@ Components in this folder are reused by:
 - `/report-a-reef/confirmation`
 - `/my-reports`
 - `/my-reports/[reportId]`
+
+The My Reports list requests 20 records at a time and provides Previous and
+Next controls, so reports after the first backend page are still accessible.

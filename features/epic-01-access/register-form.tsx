@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   MAX_DISPLAY_NAME_LENGTH,
   MAX_PASSWORD_LENGTH,
+  MIN_DISTINCT_PASSWORD_CHARACTERS,
   MIN_PASSWORD_LENGTH,
+  passwordMeetsRequirements,
   register,
 } from "@/lib/api/authApi";
 import { useAuth } from "./auth-context";
@@ -27,9 +29,8 @@ export function RegisterForm() {
   const emailValid = EMAIL_PATTERN.test(email.trim());
   const displayNameValid =
     displayName.trim().length > 0 && displayName.trim().length <= MAX_DISPLAY_NAME_LENGTH;
-  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
-  const passwordValid =
-    password.length >= MIN_PASSWORD_LENGTH && password.length <= MAX_PASSWORD_LENGTH;
+  const passwordInvalid = password.length > 0 && !passwordMeetsRequirements(password);
+  const passwordValid = passwordMeetsRequirements(password);
   const canSubmit = emailValid && displayNameValid && passwordValid && !submitting;
 
   async function handleSubmit(event: React.FormEvent) {
@@ -103,9 +104,9 @@ export function RegisterForm() {
         />
         <span
           id="register-password-hint"
-          className={passwordTooShort ? styles.hintError : styles.hint}
+          className={passwordInvalid ? styles.hintError : styles.hint}
         >
-          Minimum {MIN_PASSWORD_LENGTH} characters
+          {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters with at least {MIN_DISTINCT_PASSWORD_CHARACTERS} different characters
         </span>
       </div>
 

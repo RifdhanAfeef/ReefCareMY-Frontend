@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getCoordinatorQueue } from "@/lib/api/coordinatorApi";
 import type { CoordinatorQueueResult } from "@/lib/api/types";
+import { readStoredAuth } from "@/lib/api/token-store";
 import styles from "./triage.module.css";
 
 const pageSize = 20;
 
 type LoadState = "loading" | "loaded" | "error";
 
-function waitingTime(hours: number) {
+function waitingTime(hours?: number) {
+  if (hours == null) return "—";
   if (hours < 1) return "Less than 1 hour";
   const roundedHours = Math.round(hours);
   return `${roundedHours} ${roundedHours === 1 ? "hour" : "hours"}`;
@@ -24,6 +26,8 @@ export function ReportQueue() {
   const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
   const [site, setSite] = useState("all");
+  const [ownership, setOwnership] = useState("all");
+  const currentUserId = readStoredAuth()?.user.id;
 
   useEffect(() => {
     let cancelled = false;
@@ -63,12 +67,22 @@ export function ReportQueue() {
           report.reportReference.toLowerCase().includes(query) ||
           report.threat.toLowerCase().includes(query);
         const matchesSite = site === "all" || report.area === site;
-        return matchesSearch && matchesSite;
+        const isClaimed = Boolean(report.owner) || Boolean(report.claimedAt);
+        const matchesOwnership =
+          ownership === "all" ||
+          (ownership === "unclaimed" && !isClaimed) ||
+          (ownership === "mine" && report.owner?.id === currentUserId) ||
+          (ownership === "claimed" && isClaimed);
+        return matchesSearch && matchesSite && matchesOwnership;
       }),
-    [items, search, site],
+    [currentUserId, items, ownership, search, site],
   );
 
   const total = result?.total ?? 0;
+  const hasAllReportsContract = items.length === 0 || items.every((item) =>
+    Object.prototype.hasOwnProperty.call(item, "owner") &&
+    Object.prototype.hasOwnProperty.call(item, "statusCode"),
+  );
   const actualPageSize = result?.pageSize || pageSize;
   const totalPages = Math.max(1, Math.ceil(total / actualPageSize));
   const firstItem = total === 0 ? 0 : (page - 1) * actualPageSize + 1;
@@ -77,6 +91,7 @@ export function ReportQueue() {
   function changePage(nextPage: number) {
     setSearch("");
     setSite("all");
+    setOwnership("all");
     setState("loading");
     setError(null);
     setPage(nextPage);
@@ -93,14 +108,14 @@ export function ReportQueue() {
       <header className={`${styles.heading} ${styles.queuePageHeading}`}>
         <p className={styles.eyebrow}>Coordinator workspace / Report intake</p>
         <h1>Submitted reports</h1>
-        <p>Review and claim reports that are currently available in the coordinator queue.</p>
+        <p>Review every submitted report and see whether it is unclaimed, claimed or already progressing through review.</p>
       </header>
 
       <section className={styles.card}>
         <div className={styles.queueCardHeading}>
-          <h2>Available reports</h2>
+          <h2>All submitted reports</h2>
           {state === "loaded" && (
-            <span className={styles.pendingChip}>{total} available</span>
+            <span className={styles.pendingChip}>{total} reports</span>
           )}
         </div>
 
@@ -127,6 +142,12 @@ export function ReportQueue() {
 
         {state === "loaded" && result && (
           <>
+            {!hasAllReportsContract && (
+              <div className={styles.warningBox} role="status">
+                <strong>The backend is still returning the old unclaimed-only queue shape</strong>
+                <p>Claimed reports cannot appear until this endpoint returns statusCode, owner and claimedAt for every submitted report.</p>
+              </div>
+            )}
             <div className={styles.filters}>
               <label>
                 Search this page
@@ -145,6 +166,15 @@ export function ReportQueue() {
                   ))}
                 </select>
               </label>
+              <label>
+                Ownership on this page
+                <select value={ownership} onChange={(event) => setOwnership(event.target.value)}>
+                  <option value="all">All reports</option>
+                  <option value="unclaimed">Unclaimed</option>
+                  <option value="claimed">Claimed</option>
+                  <option value="mine">Claimed by me</option>
+                </select>
+              </label>
             </div>
 
             {reports.length > 0 && (
@@ -157,6 +187,7 @@ export function ReportQueue() {
                       <th>General site</th>
                       <th>Status</th>
                       <th>Waiting</th>
+                      <th>Owner</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -167,15 +198,20 @@ export function ReportQueue() {
                         <td>{report.threat}</td>
                         <td>{report.area}</td>
                         <td><span className={styles.receivedChip}>{report.statusLabel}</span></td>
-                        <td>{waitingTime(report.hoursInQueue)}</td>
+                        <td>{report.owner ? "—" : waitingTime(report.hoursInQueue)}</td>
+                        <td>{report.owner?.displayName ?? "Unclaimed"}</td>
                         <td>
-                          <Link
-                            className={styles.tableLink}
-                            href={`/coordinator/reports/${report.reportReference}?claim=1`}
-                          >
-                            Review and claim
-                            <span className="sr-only"> {report.reportReference}</span>
-                          </Link>
+                          {!report.owner && !report.claimedAt ? (
+                            <Link className={styles.tableLink} href={`/coordinator/reports/${report.reportReference}?claim=1`}>
+                              Review and claim<span className="sr-only"> {report.reportReference}</span>
+                            </Link>
+                          ) : report.owner?.id === currentUserId ? (
+                            <Link className={styles.tableLink} href={`/coordinator/reports/${report.reportReference}`}>
+                              View claimed case<span className="sr-only"> {report.reportReference}</span>
+                            </Link>
+                          ) : (
+                            <span className={styles.muted}>Claimed</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -186,11 +222,11 @@ export function ReportQueue() {
 
             {reports.length === 0 && (
               <div className={styles.emptyState} role="status">
-                <strong>{items.length === 0 ? "No reports are waiting" : "No matching reports"}</strong>
+                <strong>{items.length === 0 ? "No reports were returned" : "No matching reports"}</strong>
                 <p>
                   {items.length === 0
-                    ? "Newly submitted reports will appear here when they are available to claim."
-                    : "Change the search or site filter to view other reports on this page."}
+                    ? "The backend did not return any submitted reports for this page."
+                    : "Change the search, site or ownership filter to view other reports on this page."}
                 </p>
               </div>
             )}
@@ -198,7 +234,7 @@ export function ReportQueue() {
             {total > 0 && (
               <nav className={styles.pagination} aria-label="Report queue pages">
                 <p aria-live="polite">
-                  Showing {firstItem}–{lastItem} of {total} available reports
+                  Showing {firstItem}–{lastItem} of {total} reports
                 </p>
                 <div>
                   <button
