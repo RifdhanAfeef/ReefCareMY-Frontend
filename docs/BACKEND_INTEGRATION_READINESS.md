@@ -1,6 +1,6 @@
 # Backend integration readiness — Iteration 1
 
-Last updated: 31 August 2026
+Last updated: 4 September 2026
 
 Reviewed against:
 
@@ -24,7 +24,7 @@ administrator contracts are missing from the supplied backend documentation.
 | Authentication and observer registration | Partially integrated | Confirm the final login response, complete logout and test real role-bearing accounts. |
 | Observer reporting and Dive Sessions | Integration-ready | Connect to the deployed API and run the complete observer submission path. |
 | Observer My Reports and timeline | Integration-ready | Verify the observer-safe response shapes and cross-account access controls. |
-| Coordinator workspace | UI ready, backend-blocked in places | Complete My Cases, evidence, evidence-assessment and history contracts before replacing prototype records. |
+| Coordinator workspace | Queue integrated; remaining workflow backend-blocked in places | Complete My Cases, evidence, evidence-assessment and history contracts before replacing the remaining prototype case records. |
 | Administrator workspace | UI ready, backend-blocked | Define account creation, directory, role/status update and access-request APIs. |
 
 The frontend verification baseline is currently 16 passing test files
@@ -45,7 +45,7 @@ production build that includes `/admin/users/new`.
 | US2.2 Capture report | Photo validation, backend threat categories, all required fields, optional depth, Unsure category, local draft persistence | Integrated through the reference and multipart submission APIs. Backend reference data must include all five form choices. |
 | US2.3 Review/submit | Review summary, protected-location summary, real multipart submit and API confirmation | Integrated. The backend owns persistence, reference generation, submission time and initial Received status. |
 | US4.1 Safe location | Backend Dive Session selection/creation, named site, optional interactive pin, confidence and privacy review | Integrated. Current backend contract requires `diveDate`; the UI labels and validates it as required. |
-| US5.1 Queue/claim | Queue, ownership filters, claim screen, typed queue/claim adapters | UI and contract ready. A real queue response must replace prototype records. |
+| US5.1 Queue/claim | Paginated backend queue with loading, retry and page controls; claim screen and typed claim adapter | Queue list integrated. Claim and case-detail screens still require the remaining workflow integration. |
 | US5.2 Review details | Evidence, description, time, depth, confidence and exact-location layout | UI ready, but blocked by incomplete backend case/evidence response contracts listed below. |
 | US5.3 Evidence usability | Needs-more-information branch and 500-character reason limit | UI and information-request adapter ready. Evidence-accepted transition contract is missing. |
 | US5.4 Response type | Monitoring, referral/share and intervention options; typed decision adapter | UI and contract ready. |

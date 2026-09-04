@@ -1,16 +1,8 @@
 # ReefCare MY frontend
 
-
-## Deployed Frontend Link:
-
-https://reefcare-frontend.vercel.app/
-
-## Start locally
-
 This is the Next.js frontend for ReefCare MY. It lets reef observers learn what
 to report, submit an observation and follow its status. It also contains the
 coordinator and administrator workspaces used in the Iteration 1 prototype.
-
 
 ## Run the project
 
