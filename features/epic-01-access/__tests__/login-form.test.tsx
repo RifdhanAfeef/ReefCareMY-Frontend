@@ -49,7 +49,7 @@ async function fillAndSubmit(email: string, password: string) {
 }
 
 describe("Login — generic credential error", () => {
-  it("shows the backend's message as-is", async () => {
+  it("shows a user-safe credential message", async () => {
     mockedLogin.mockRejectedValue(new Error("Invalid credentials"));
 
     render(
@@ -60,7 +60,7 @@ describe("Login — generic credential error", () => {
 
     await fillAndSubmit("observer@example.org", "wrong-password");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid credentials");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect.");
   });
 });
 
@@ -117,7 +117,7 @@ describe("Login — success stores the session and navigates onward", () => {
     expect(
       await screen.findByText("Signed in as observer, token tok-abc"),
     ).toBeInTheDocument();
-    expect(push).toHaveBeenCalledWith("/my-reports");
+    expect(push).toHaveBeenCalledWith("/");
     expect(mockedLogin).toHaveBeenCalledWith("observer@example.org", "correct-horse-battery");
 
     const stored = JSON.parse(window.localStorage.getItem("reefcare.auth") ?? "null");

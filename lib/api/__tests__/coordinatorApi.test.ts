@@ -4,17 +4,23 @@ import {
   claimReport,
   closeCase,
   getCoordinatorCase,
+  getCoordinatorEvidence,
   getCoordinatorQueue,
+  recordEvidenceAssessment,
   recordCaseDecision,
   requestMoreInformation,
+  startReview,
 } from "../coordinatorApi";
 
 vi.mock("../client");
 const mockedApiRequest = vi.mocked(client.apiRequest);
+const mockedApiBlobRequest = vi.mocked(client.apiBlobRequest);
 
 beforeEach(() => {
   mockedApiRequest.mockReset();
   mockedApiRequest.mockResolvedValue({} as never);
+  mockedApiBlobRequest.mockReset();
+  mockedApiBlobRequest.mockResolvedValue(new Blob());
 });
 
 describe("coordinator API contract", () => {
@@ -27,6 +33,32 @@ describe("coordinator API contract", () => {
       "/api/v1/coordinator/reports/RC-0241/claim",
       "/api/v1/coordinator/reports/RC-0241",
     ]);
+  });
+
+  it("uses the start-review, evidence-assessment and protected evidence contracts", async () => {
+    await startReview("RC-0241");
+    await recordEvidenceAssessment("RC-0241", {
+      evidenceUsable: true,
+      observationCredible: true,
+      notes: "Evidence supports the report.",
+    });
+    await getCoordinatorEvidence("RC-0241", 13);
+
+    expect(mockedApiRequest.mock.calls).toEqual([
+      [{ path: "/api/v1/coordinator/reports/RC-0241/start-review", method: "POST" }],
+      [{
+        path: "/api/v1/coordinator/reports/RC-0241/evidence-assessment",
+        method: "POST",
+        body: {
+          evidenceUsable: true,
+          observationCredible: true,
+          notes: "Evidence supports the report.",
+        },
+      }],
+    ]);
+    expect(mockedApiBlobRequest).toHaveBeenCalledWith({
+      path: "/api/v1/coordinator/reports/RC-0241/evidence/13",
+    });
   });
 
   it("uses the documented information, decision and closure bodies", async () => {

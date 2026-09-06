@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getCoordinatorQueue } from "@/lib/api/coordinatorApi";
 import type { CoordinatorQueueResult } from "@/lib/api/types";
 import { readStoredAuth } from "@/lib/api/token-store";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import styles from "./triage.module.css";
 
 const pageSize = 20;
@@ -16,6 +17,10 @@ function waitingTime(hours?: number) {
   if (hours < 1) return "Less than 1 hour";
   const roundedHours = Math.round(hours);
   return `${roundedHours} ${roundedHours === 1 ? "hour" : "hours"}`;
+}
+
+function areaLabel(area: string | null) {
+  return area ?? "Not provided";
 }
 
 export function ReportQueue() {
@@ -40,11 +45,7 @@ export function ReportQueue() {
       })
       .catch((requestError) => {
         if (cancelled) return;
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "The report queue could not be loaded.",
-        );
+        setError(userFacingError(requestError, "The report queue could not be loaded."));
         setState("error");
       });
 
@@ -55,7 +56,7 @@ export function ReportQueue() {
 
   const items = useMemo(() => result?.items ?? [], [result]);
   const sites = useMemo(
-    () => Array.from(new Set(items.map((record) => record.area))).sort(),
+    () => Array.from(new Set(items.map((record) => areaLabel(record.area)))).sort(),
     [items],
   );
   const reports = useMemo(
@@ -66,7 +67,7 @@ export function ReportQueue() {
           !query ||
           report.reportReference.toLowerCase().includes(query) ||
           report.threat.toLowerCase().includes(query);
-        const matchesSite = site === "all" || report.area === site;
+        const matchesSite = site === "all" || areaLabel(report.area) === site;
         const isClaimed = Boolean(report.owner) || Boolean(report.claimedAt);
         const matchesOwnership =
           ownership === "all" ||
@@ -79,10 +80,6 @@ export function ReportQueue() {
   );
 
   const total = result?.total ?? 0;
-  const hasAllReportsContract = items.length === 0 || items.every((item) =>
-    Object.prototype.hasOwnProperty.call(item, "owner") &&
-    Object.prototype.hasOwnProperty.call(item, "statusCode"),
-  );
   const actualPageSize = result?.pageSize || pageSize;
   const totalPages = Math.max(1, Math.ceil(total / actualPageSize));
   const firstItem = total === 0 ? 0 : (page - 1) * actualPageSize + 1;
@@ -142,12 +139,6 @@ export function ReportQueue() {
 
         {state === "loaded" && result && (
           <>
-            {!hasAllReportsContract && (
-              <div className={styles.warningBox} role="status">
-                <strong>The backend is still returning the old unclaimed-only queue shape</strong>
-                <p>Claimed reports cannot appear until this endpoint returns statusCode, owner and claimedAt for every submitted report.</p>
-              </div>
-            )}
             <div className={styles.filters}>
               <label>
                 Search this page
@@ -196,7 +187,7 @@ export function ReportQueue() {
                       <tr key={report.reportReference}>
                         <td><strong>{report.reportReference}</strong></td>
                         <td>{report.threat}</td>
-                        <td>{report.area}</td>
+                        <td>{areaLabel(report.area)}</td>
                         <td><span className={styles.receivedChip}>{report.statusLabel}</span></td>
                         <td>{report.owner ? "—" : waitingTime(report.hoursInQueue)}</td>
                         <td>{report.owner?.displayName ?? "Unclaimed"}</td>
@@ -225,7 +216,7 @@ export function ReportQueue() {
                 <strong>{items.length === 0 ? "No reports were returned" : "No matching reports"}</strong>
                 <p>
                   {items.length === 0
-                    ? "The backend did not return any submitted reports for this page."
+                    ? "No submitted reports are available on this page."
                     : "Change the search, site or ownership filter to view other reports on this page."}
                 </p>
               </div>

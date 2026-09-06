@@ -25,6 +25,7 @@ const report = {
   reportReference: "RC-1001",
   threat: "Ghost fishing gear",
   area: "Tioman Island",
+  statusCode: "received" as const,
   statusLabel: "Received",
   submittedAt: "2026-09-04T02:00:00Z",
   hoursInQueue: 3,
@@ -77,7 +78,7 @@ describe("Coordinator report queue", () => {
 
     render(<ReportQueue />);
 
-    expect(await screen.findByText("Unable to reach the coordinator API.")).toBeInTheDocument();
+    expect(await screen.findByText("The report queue could not be loaded.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(await screen.findByText("No reports were returned")).toBeInTheDocument();
@@ -85,6 +86,7 @@ describe("Coordinator report queue", () => {
   });
 
   it("renders claimed reports and lets the current owner reopen their case", async () => {
+    const user = userEvent.setup();
     window.localStorage.setItem("reefcare.auth", JSON.stringify({
       accessToken: "coordinator-token",
       user: { id: 8, displayName: "Current Coordinator", role: "case_coordinator" },
@@ -115,14 +117,18 @@ describe("Coordinator report queue", () => {
     );
     expect(screen.getByText("Another Coordinator")).toBeInTheDocument();
     expect(screen.getByText("Under Review")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Ownership on this page"), "mine");
+    expect(screen.getByRole("link", { name: "View claimed case RC-1001" })).toBeInTheDocument();
+    expect(screen.queryByText("Another Coordinator")).not.toBeInTheDocument();
   });
 
-  it("explains when the backend still returns the unclaimed-only response shape", async () => {
+  it("does not expose API-contract language when records are returned", async () => {
     mockedGetCoordinatorQueue.mockResolvedValue(resultOf([report]));
 
     render(<ReportQueue />);
 
-    expect(await screen.findByText("The backend is still returning the old unclaimed-only queue shape")).toBeInTheDocument();
-    expect(screen.getByText(/Claimed reports cannot appear until this endpoint returns/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Review and claim RC-1001" })).toBeInTheDocument();
+    expect(screen.queryByText(/backend|endpoint/i)).not.toBeInTheDocument();
   });
 });

@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-type ApiRequestOptions = Omit<RequestInit, "body"> & {
+export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   path: string;
   body?: BodyInit | object;
   auth?: boolean;
@@ -44,13 +44,13 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function apiRequest<T>({
+async function executeRequest({
   path,
   headers,
   body,
   auth = true,
   ...options
-}: ApiRequestOptions): Promise<T> {
+}: ApiRequestOptions): Promise<Response> {
   const requestHeaders = new Headers(headers);
   let requestBody: BodyInit | undefined;
 
@@ -63,9 +63,7 @@ export async function apiRequest<T>({
 
   if (auth) {
     const token = readStoredAuth()?.accessToken;
-    if (token) {
-      requestHeaders.set("Authorization", `Bearer ${token}`);
-    }
+    if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -82,9 +80,22 @@ export async function apiRequest<T>({
     );
   }
 
+  return response;
+}
+
+export async function apiRequest<T>({
+  ...options
+}: ApiRequestOptions): Promise<T> {
+  const response = await executeRequest(options);
+
   if (response.status === 204) {
     return undefined as T;
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function apiBlobRequest(options: ApiRequestOptions): Promise<Blob> {
+  const response = await executeRequest(options);
+  return response.blob();
 }

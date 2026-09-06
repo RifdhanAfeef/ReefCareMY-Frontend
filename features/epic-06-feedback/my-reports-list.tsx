@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyReports } from "@/lib/api/reportsApi";
 import type { MyReportsResult } from "@/lib/api/types";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import styles from "./my-reports-list.module.css";
 
 type LoadState = "loading" | "loaded" | "error";
@@ -29,7 +30,7 @@ export function MyReportsList() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : null);
+          setError(userFacingError(err, "Your reports could not be loaded right now."));
           setState("error");
         }
       });
@@ -59,7 +60,7 @@ export function MyReportsList() {
     return (
       <section className={styles.message} role="alert">
         <strong>We couldn&apos;t load your reports</strong>
-        <p>{error ?? "Please check the backend connection and try again."}</p>
+        <p>{error}</p>
         <button className={styles.button} type="button" onClick={retry}>Try again</button>
       </section>
     );

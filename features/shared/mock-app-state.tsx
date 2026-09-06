@@ -16,6 +16,7 @@ import type {
 } from "@/features/epic-01-access/types";
 import type { ReportDraft } from "@/features/epic-02-reporting/types";
 import { formatDateTime } from "@/lib/format/date";
+import { useAuth } from "@/features/epic-01-access/auth-context";
 
 export type LocationFlowStep =
   | "session"
@@ -55,7 +56,7 @@ export type LocationDraft = {
     end: string;
   };
   pin: MapPin | null;
-  locationSource: "dive_site" | "map_pin";
+  locationSource: "dive_site" | "map_pin" | "manual_coordinates";
   confidence: LocationConfidenceCode | "";
 };
 
@@ -100,20 +101,29 @@ type AppStateContextValue = {
 };
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
-const storageKey = "reefcare-my-iteration-1-state-v5";
+const storageKeyPrefix = "reefcare-my-iteration-1-state-v6";
+
+export function accountDraftStorageKey(userId: number) {
+  return `${storageKeyPrefix}:user:${userId}`;
+}
 
 export function MockAppStateProvider({ children }: { children: React.ReactNode }) {
+  const { status, user } = useAuth();
   const [cases, setCases] = useState<CaseRecord[]>(initialCases);
   const [locationDraft, setLocationDraft] = useState<LocationDraft>(initialLocationDraft);
   const [reportDraft, setReportDraft] = useState<ReportDraft>(initialReportDraft);
-  const [restored, setRestored] = useState(false);
+  const [restoredKey, setRestoredKey] = useState<string | null>(null);
+  const activeStorageKey = status === "authenticated" && user
+    ? accountDraftStorageKey(user.id)
+    : null;
 
   useEffect(() => {
+    if (status === "loading") return;
     let storedCases: CaseRecord[] | undefined;
     let storedLocationDraft: LocationDraft | undefined;
     let storedReportDraft: ReportDraft | undefined;
     try {
-      const stored = window.localStorage.getItem(storageKey);
+      const stored = activeStorageKey ? window.localStorage.getItem(activeStorageKey) : null;
       if (stored) {
         const parsed = JSON.parse(stored) as {
           cases?: CaseRecord[];
@@ -125,21 +135,21 @@ export function MockAppStateProvider({ children }: { children: React.ReactNode }
         if (parsed.reportDraft) storedReportDraft = parsed.reportDraft;
       }
     } catch {
-      window.localStorage.removeItem(storageKey);
+      if (activeStorageKey) window.localStorage.removeItem(activeStorageKey);
     }
     const restoreTimer = window.setTimeout(() => {
-      if (storedCases) setCases(storedCases);
-      if (storedLocationDraft) setLocationDraft(storedLocationDraft);
-      if (storedReportDraft) setReportDraft(storedReportDraft);
-      setRestored(true);
+      setCases(storedCases ?? initialCases);
+      setLocationDraft(storedLocationDraft ?? initialLocationDraft);
+      setReportDraft(storedReportDraft ?? initialReportDraft);
+      setRestoredKey(activeStorageKey);
     }, 0);
     return () => window.clearTimeout(restoreTimer);
-  }, []);
+  }, [activeStorageKey, status]);
 
   useEffect(() => {
-    if (!restored) return;
-    window.localStorage.setItem(storageKey, JSON.stringify({ cases, locationDraft, reportDraft }));
-  }, [cases, locationDraft, reportDraft, restored]);
+    if (!activeStorageKey || restoredKey !== activeStorageKey) return;
+    window.localStorage.setItem(activeStorageKey, JSON.stringify({ cases, locationDraft, reportDraft }));
+  }, [activeStorageKey, cases, locationDraft, reportDraft, restoredKey]);
 
   const findCase = useCallback(
     (reportReference: string) =>
@@ -215,8 +225,8 @@ export function MockAppStateProvider({ children }: { children: React.ReactNode }
     setCases(initialCases);
     setLocationDraft(initialLocationDraft);
     setReportDraft(initialReportDraft);
-    window.localStorage.removeItem(storageKey);
-  }, []);
+    if (activeStorageKey) window.localStorage.removeItem(activeStorageKey);
+  }, [activeStorageKey]);
 
   const value = useMemo<AppStateContextValue>(
     () => ({

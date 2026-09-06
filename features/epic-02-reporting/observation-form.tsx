@@ -11,6 +11,7 @@ import {
 } from "@/lib/format/date";
 import { getThreatCategories } from "@/lib/api/referenceApi";
 import type { ThreatCategoryReference } from "@/lib/api/types";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import { createPhotoId, loadDraftPhotos, saveDraftPhotos, type StoredDraftPhoto } from "./draft-storage";
 import type { ReportDraft } from "./types";
 import styles from "./reporting.module.css";
@@ -69,9 +70,9 @@ export function ObservationForm() {
           updateReportDraft({ threatCategoryId: selected.threatCategoryId });
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!cancelled) {
-          setCategoryLoadError("Threat categories could not be loaded. Check the backend connection and try again.");
+          setCategoryLoadError(userFacingError(error, "Threat categories are temporarily unavailable. Please try again."));
         }
       });
     return () => {

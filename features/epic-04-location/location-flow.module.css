@@ -5,6 +5,7 @@
 .heading > p:last-child, .supporting { color: var(--color-muted); }
 .heading > p:last-child { margin: 12px 0 0; font-size: 18px; }
 .choiceGrid, .privacyGrid, .savedGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 50px; }
+.locationChoices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .formLayout { display: grid; grid-template-columns: minmax(0, 900px); justify-content: center; margin-top: 44px; }
 .confirmGrid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, .8fr); gap: 40px; margin-top: 44px; }
 .card, .sidePanel { min-width: 0; padding: 36px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
@@ -27,7 +28,7 @@
 .secondaryButton { color: var(--color-primary); background: #fff; border: 2px solid var(--color-primary); }
 .primaryButton:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
 .secondaryButton:hover { background: var(--color-info); }
-.secondaryButton:disabled { color: var(--color-muted); background: #eef4f3; border-color: var(--color-border); cursor: not-allowed; }
+.primaryButton:disabled, .secondaryButton:disabled { color: var(--color-muted); background: #eef4f3; border-color: var(--color-border); cursor: not-allowed; }
 .infoPanel, .privacyStrip { margin-top: 30px; padding: 20px 24px; background: var(--color-info); border-radius: var(--radius-card); }
 .infoPanel p, .privacyStrip p, .infoBox p, .warning p, .purpleBox p { margin: 4px 0 0; }
 .infoPanel p, .privacyStrip p, .infoBox p { color: var(--color-primary); }
@@ -44,6 +45,11 @@
 .checkList li::before { content: "✓"; display: inline-grid; width: 24px; height: 24px; margin-right: 12px; place-items: center; color: #fff; background: var(--color-primary); border-radius: 6px; }
 .warning { margin-top: 24px; padding: 20px; color: #7b5215; background: #fff4df; border-radius: 14px; }
 .errorText { margin: 14px 0 0; color: var(--color-danger); font-size: 14px; font-weight: 700; }
+.inlineError { margin-top: 16px; padding: 14px 16px; color: var(--color-danger); background: #fff3f1; border-radius: 12px; }
+.inlineError p { margin: 0 0 8px; }
+.textRetry { padding: 0; color: var(--color-primary); background: transparent; border: 0; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.locationChoices .textRetry { margin-top: 18px; align-self: flex-start; }
+.coordinateFields { display: grid; gap: 18px; margin: 24px 0; }
 .actions, .splitActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 30px; }
 .map { position: relative; width: 100%; min-height: 300px; margin: 24px 0; overflow: hidden; background: #dbeae7; border: 1px solid var(--color-border); border-radius: 14px; }
 .mapCanvas { width: 100%; min-height: 300px; cursor: grab; }
@@ -70,5 +76,6 @@
 .detailList dt { color: var(--color-muted); font-size: 14px; font-weight: 700; }
 .detailList dd { margin: 4px 0 0; font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
 .purpleBox { margin-top: 36px; padding: 20px; color: #6e55a3; background: #f1ecfa; border-radius: 14px; }
+@media (max-width: 1100px) { .locationChoices { grid-template-columns: 1fr; } }
 @media (max-width: 1000px) { .choiceGrid, .privacyGrid, .formLayout, .confirmGrid, .savedGrid { grid-template-columns: 1fr; } .savedContent { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .page { width: min(calc(100% - 32px), var(--content-width)); padding: 32px 0 48px; } .choiceGrid, .privacyGrid, .savedGrid, .formLayout, .confirmGrid { gap: 22px; margin-top: 30px; } .card, .sidePanel { padding: 24px; } .formGrid, .timeFields { grid-template-columns: 1fr; } .fullField { grid-column: auto; } .map { min-height: 220px; } .actions, .splitActions { align-items: stretch; flex-direction: column-reverse; } .actions > *, .splitActions > *, .primaryButton, .secondaryButton { width: 100%; align-self: stretch; } .accessList div { grid-template-columns: 1fr; gap: 4px; } }

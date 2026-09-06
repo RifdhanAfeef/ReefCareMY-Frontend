@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiRequest } from "../client";
+import { apiBlobRequest, apiRequest } from "../client";
 import { writeStoredAuth } from "../token-store";
 
 function jsonResponse(body: unknown, status = 200) {
@@ -118,5 +118,25 @@ describe("apiRequest — error message extraction", () => {
     await expect(apiRequest({ path: "/api/v1/reports/mine" })).rejects.toThrow(
       "Request failed with status 500.",
     );
+  });
+});
+
+describe("apiBlobRequest", () => {
+  it("returns a protected binary response without trying to parse JSON", async () => {
+    writeStoredAuth({
+      user: { id: 8, displayName: "Coordinator", role: "case_coordinator" },
+      accessToken: "coordinator-token",
+    });
+    const image = new Blob(["image-bytes"], { type: "image/jpeg" });
+    vi.mocked(fetch).mockResolvedValue(new Response(image, {
+      status: 200,
+      headers: { "Content-Type": "image/jpeg" },
+    }));
+
+    const result = await apiBlobRequest({ path: "/api/v1/coordinator/reports/RC-1/evidence/13" });
+
+    expect(result.type).toBe("image/jpeg");
+    expect(new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get("Authorization"))
+      .toBe("Bearer coordinator-token");
   });
 });

@@ -10,7 +10,7 @@ export function buildReportSubmissionPayload(
   const session = location.sessions.find((item) => item.id === location.selectedSessionId);
 
   if (!Number.isInteger(report.threatCategoryId) || Number(report.threatCategoryId) <= 0 || !session?.backendId || !location.confidence) {
-    throw new Error("The report needs a backend Dive Session, threat and location confidence.");
+    throw new Error("The report needs a Dive Session, threat category and location confidence.");
   }
 
   const payload: ReportSubmissionPayload = {

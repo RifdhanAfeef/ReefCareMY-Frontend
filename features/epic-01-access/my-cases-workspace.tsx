@@ -2,157 +2,83 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api/client";
-import {
-  forgetRememberedClaim,
-  readRememberedClaims,
-  type RememberedClaim,
-} from "@/lib/api/claimed-case-store";
-import { getCoordinatorCase } from "@/lib/api/coordinatorApi";
-import type { CoordinatorCase } from "@/lib/api/types";
+import { getCoordinatorQueue } from "@/lib/api/coordinatorApi";
+import type { CoordinatorQueueItem } from "@/lib/api/types";
+import { readStoredAuth } from "@/lib/api/token-store";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import { formatDateTime } from "@/lib/format/date";
 import { StatusPill } from "./status-pill";
 import styles from "./access-ui.module.css";
 
-type LoadedCase = {
-  claim: RememberedClaim;
-  caseRecord: CoordinatorCase;
-};
+type MyCaseRow = Pick<
+  CoordinatorQueueItem,
+  "reportReference" | "threat" | "area" | "claimedAt" | "statusLabel"
+>;
 
-function displayDateTime(value: string) {
+function displayDateTime(value?: string | null) {
+  if (!value) return "Not provided";
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? value : formatDateTime(parsed);
 }
 
 export function MyCasesWorkspace() {
-  const [claims] = useState(readRememberedClaims);
-  const [cases, setCases] = useState<LoadedCase[]>([]);
-  const [loading, setLoading] = useState(claims.length > 0);
-  const [failedCount, setFailedCount] = useState(0);
+  const currentUserId = readStoredAuth()?.user.id;
+  const [cases, setCases] = useState<MyCaseRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (claims.length === 0) return;
     let cancelled = false;
 
-    Promise.allSettled(
-      claims.map(async (claim) => ({
-        claim,
-        caseRecord: await getCoordinatorCase(claim.reportReference),
-      })),
-    ).then((results) => {
-      if (cancelled) return;
-
-      const loaded: LoadedCase[] = [];
-      let failures = 0;
-      results.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          loaded.push(result.value);
-          return;
+    async function loadCases() {
+      setError("");
+      try {
+        const firstPage = await getCoordinatorQueue(1, 100);
+        const pageSize = firstPage.pageSize || 100;
+        const totalPages = Math.max(1, Math.ceil(firstPage.total / pageSize));
+        const remainingPages = totalPages > 1
+          ? await Promise.all(
+              Array.from({ length: totalPages - 1 }, (_, index) =>
+                getCoordinatorQueue(index + 2, pageSize),
+              ),
+            )
+          : [];
+        if (!cancelled) {
+          setCases(
+            [firstPage, ...remainingPages]
+              .flatMap((queuePage) => queuePage.items)
+              .filter((record) => record.owner?.id === currentUserId),
+          );
+          setLoading(false);
         }
+      } catch (queueError) {
+        if (cancelled) return;
+        setCases([]);
+        setError(userFacingError(queueError, "Your claimed cases could not be loaded right now."));
+        setLoading(false);
+      }
+    }
 
-        if (result.reason instanceof ApiError && [403, 404].includes(result.reason.status)) {
-          forgetRememberedClaim(claims[index].reportReference);
-        } else {
-          failures += 1;
-        }
-      });
-
-      setCases(loaded);
-      setFailedCount(failures);
-      setLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [claims, reloadKey]);
+    void loadCases();
+    return () => { cancelled = true; };
+  }, [currentUserId, reloadKey]);
 
   function retry() {
     setLoading(true);
-    setFailedCount(0);
+    setError("");
     setReloadKey((value) => value + 1);
   }
 
   if (loading) {
-    return (
-      <section className={styles.card}>
-        <div className={styles.emptyState} role="status">
-          <h2 className={styles.sectionHeading}>Loading your claimed cases…</h2>
-          <p>Checking current ownership with the backend.</p>
-        </div>
-      </section>
-    );
+    return <section className={styles.card}><div className={styles.emptyState} role="status"><h2 className={styles.sectionHeading}>Loading your claimed cases…</h2><p>Retrieving your current cases.</p></div></section>;
   }
 
-  if (claims.length === 0) {
-    return (
-      <section className={styles.card}>
-        <div className={styles.emptyState}>
-          <h2 className={styles.sectionHeading}>No claimed cases saved on this device</h2>
-          <p>Reports you claim from the queue will appear here after the backend confirms ownership.</p>
-          <p className={styles.muted}>Older claims and claims made on another device still require a coordinator-owned cases list endpoint.</p>
-          <Link className={styles.primaryButton} href="/coordinator/report-queue">Open report queue</Link>
-        </div>
-      </section>
-    );
+  if (cases.length === 0) {
+    return <section className={styles.card}><div className={styles.emptyState}><h2 className={styles.sectionHeading}>{error ? "Your cases are unavailable" : "You have no claimed cases"}</h2><p>{error || "Reports you claim from the queue will appear here."}</p>{error && <button className={styles.secondaryButton} type="button" onClick={retry}>Try again</button>}<Link className={styles.primaryButton} href="/coordinator/report-queue">Open report queue</Link></div></section>;
   }
 
-  return (
-    <div className={styles.stack}>
-      <div className={styles.notice}>
-        <strong>Backend-verified cases</strong>
-        Each saved report reference is reloaded through the current owned-case endpoint. Cases the backend no longer allows are not displayed.
-      </div>
-
-      {failedCount > 0 && (
-        <div className={styles.warningNotice} role="alert">
-          <strong>Some cases could not be checked</strong>
-          {failedCount} {failedCount === 1 ? "case" : "cases"} could not be reached. Your saved references were kept.
-          <div className={styles.pageActions}>
-            <button className={styles.secondaryButton} type="button" onClick={retry}>Try again</button>
-          </div>
-        </div>
-      )}
-
-      {cases.length === 0 ? (
-        <section className={styles.card}>
-          <div className={styles.emptyState}>
-            <h2 className={styles.sectionHeading}>No accessible claimed cases</h2>
-            <p>The backend did not confirm ownership for any saved report.</p>
-            <Link className={styles.primaryButton} href="/coordinator/report-queue">Open report queue</Link>
-          </div>
-        </section>
-      ) : (
-        <section className={styles.tableCard} aria-label="Cases owned by this coordinator">
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Report</th>
-                  <th scope="col">Threat</th>
-                  <th scope="col">General area</th>
-                  <th scope="col">Claimed</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cases.map(({ claim, caseRecord }) => (
-                  <tr key={caseRecord.reportReference}>
-                    <td className={styles.identifier}>{caseRecord.reportReference}</td>
-                    <td>{caseRecord.threat}</td>
-                    <td>{caseRecord.area}</td>
-                    <td>{displayDateTime(claim.claimedAt)}</td>
-                    <td><StatusPill status={caseRecord.statusLabel} /></td>
-                    <td><Link className={styles.textButton} href={`/coordinator/reports/${caseRecord.reportReference}`}>Open case</Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-    </div>
-  );
+  return <div className={styles.stack}>
+    <section className={styles.tableCard} aria-label="Cases owned by this coordinator"><div className={styles.tableWrap}><table className={styles.table}><thead><tr><th scope="col">Report</th><th scope="col">Threat</th><th scope="col">General area</th><th scope="col">Claimed</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>{cases.map((record) => <tr key={record.reportReference}><td className={styles.identifier}>{record.reportReference}</td><td>{record.threat}</td><td>{record.area ?? "Not provided"}</td><td>{displayDateTime(record.claimedAt)}</td><td><StatusPill status={record.statusLabel} /></td><td><Link className={styles.textButton} href={`/coordinator/reports/${record.reportReference}`}>Open case<span className="sr-only"> {record.reportReference}</span></Link></td></tr>)}</tbody></table></div></section>
+  </div>;
 }

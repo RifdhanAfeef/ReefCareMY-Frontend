@@ -8,6 +8,7 @@ import { ReviewLocationSummary } from "@/features/epic-04-location/location-flow
 import { useMockAppState } from "@/features/shared/mock-app-state";
 import { isFutureDisplayDate, isValidDisplayDate } from "@/lib/format/date";
 import { submitReport as submitReportApi } from "@/lib/api/reportsApi";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import { clearDraftPhotos, loadDraftPhotos, type StoredDraftPhoto } from "./draft-storage";
 import { getThreatCategory } from "./threat-data";
 import { buildReportSubmissionPayload } from "./report-payload";
@@ -48,11 +49,11 @@ export function ReportReview() {
   const missingItems = useMemo(() => {
     const items: string[] = [];
     if (photos.length === 0) items.push("at least one photograph");
-    if (!threat || !reportDraft.threatCategoryId) items.push("backend threat category");
+    if (!threat || !reportDraft.threatCategoryId) items.push("threat category");
     if (!reportDraft.observationDate || !isValidDisplayDate(reportDraft.observationDate) || isFutureDisplayDate(reportDraft.observationDate)) items.push("valid, non-future observation date");
     if (!reportDraft.observationTime) items.push("observation time");
     if (!reportDraft.description.trim()) items.push("description");
-    if (!session?.backendId || !locationDraft.confidence) items.push("backend Dive Session, location and confidence");
+    if (!session?.backendId || !locationDraft.confidence) items.push("Dive Session, location and confidence");
     return items;
   }, [locationDraft.confidence, photos.length, reportDraft, session, threat]);
 
@@ -74,7 +75,7 @@ export function ReportReview() {
       });
       router.push(`/report-a-reef/confirmation?${query.toString()}`);
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : "The report could not be submitted.");
+      setSubmissionError(userFacingError(error, "The report could not be submitted."));
       setSubmitting(false);
     }
   }

@@ -136,12 +136,12 @@ export type DiveSiteReference = {
   diveSiteId: number;
   name: string;
   publicAreaLabel: string;
-  region: string;
+  region?: string | null;
 };
 
 export type DiveSession = {
   diveSessionId: number;
-  label: string;
+  label?: string | null;
   diveDate: string;
   namedDiveSite: Omit<DiveSiteReference, "region">;
   approximateStartTime: string | null;
@@ -185,11 +185,11 @@ export type ReportSubmissionPayload = {
 export type CoordinatorQueueItem = {
   reportReference: string;
   threat: string;
-  area: string;
-  statusCode?: ReportStatusCode;
+  area: string | null;
+  statusCode: ReportStatusCode;
   statusLabel: string;
   submittedAt: string;
-  hoursInQueue?: number;
+  hoursInQueue: number;
   owner?: CaseOwner | null;
   claimedAt?: string | null;
 };
@@ -221,7 +221,7 @@ export type CoordinatorCase = {
   description: string;
   observedAt?: string;
   estimatedDepthMetres: number | null;
-  area: string;
+  area: string | null;
   preciseLocation: {
     latitude: number | null;
     longitude: number | null;
@@ -231,7 +231,36 @@ export type CoordinatorCase = {
   statusLabel: string;
   submittedAt: string;
   owner: CaseOwner;
-  evidence: Array<Record<string, unknown>>;
+  evidence: CoordinatorEvidence[];
+};
+
+export type CoordinatorEvidence = {
+  evidenceId: number;
+  mediaType: string;
+  capturedAt?: string | null;
+  uploadedAt: string;
+};
+
+export type StartReviewResult = {
+  reportReference: string;
+  statusCode: "under_review";
+};
+
+export type EvidenceAssessmentCreate = {
+  evidenceUsable: boolean;
+  observationCredible?: boolean;
+  notes?: string;
+  relatedReportState?: string;
+  relatedReportReference?: string;
+};
+
+export type EvidenceAssessmentResult = {
+  reportReference: string;
+  evidenceUsable: boolean;
+  observationCredible: boolean | null;
+  status: ReportStatusCode;
+  assessedAt: string;
+  assessedBy: number;
 };
 
 export type InformationRequestResult = {

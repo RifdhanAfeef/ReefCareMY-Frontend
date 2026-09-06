@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiBlobRequest, apiRequest } from "./client";
 import type {
   CaseClosureCreate,
   CaseClosureResult,
@@ -7,7 +7,10 @@ import type {
   ClaimedCase,
   CoordinatorCase,
   CoordinatorQueueResult,
+  EvidenceAssessmentCreate,
+  EvidenceAssessmentResult,
   InformationRequestResult,
+  StartReviewResult,
 } from "./types";
 
 export async function getCoordinatorQueue(
@@ -30,6 +33,33 @@ export async function claimReport(reportReference: string): Promise<ClaimedCase>
 export async function getCoordinatorCase(reportReference: string): Promise<CoordinatorCase> {
   return apiRequest<CoordinatorCase>({
     path: `/api/v1/coordinator/reports/${encodeURIComponent(reportReference)}`,
+  });
+}
+
+export async function startReview(reportReference: string): Promise<StartReviewResult> {
+  return apiRequest<StartReviewResult>({
+    path: `/api/v1/coordinator/reports/${encodeURIComponent(reportReference)}/start-review`,
+    method: "POST",
+  });
+}
+
+export async function recordEvidenceAssessment(
+  reportReference: string,
+  payload: EvidenceAssessmentCreate,
+): Promise<EvidenceAssessmentResult> {
+  return apiRequest<EvidenceAssessmentResult>({
+    path: `/api/v1/coordinator/reports/${encodeURIComponent(reportReference)}/evidence-assessment`,
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function getCoordinatorEvidence(
+  reportReference: string,
+  evidenceId: number,
+): Promise<Blob> {
+  return apiBlobRequest({
+    path: `/api/v1/coordinator/reports/${encodeURIComponent(reportReference)}/evidence/${encodeURIComponent(String(evidenceId))}`,
   });
 }
 

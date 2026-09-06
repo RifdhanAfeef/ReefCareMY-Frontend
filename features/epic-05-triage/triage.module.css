@@ -192,6 +192,49 @@
   text-underline-offset: 3px;
 }
 
+.evidenceButton {
+  border: 0;
+  padding: 0;
+  color: var(--color-primary-hover);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.evidenceButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.evidenceAction {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  gap: 8px;
+}
+
+.evidencePreview {
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.evidenceLoading {
+  display: grid;
+  width: 100%;
+  min-height: 180px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--color-muted);
+  background: #eef5f4;
+  font-weight: 700;
+}
+
 .queueMessage {
   margin-top: 22px;
   padding: 36px 20px;
@@ -466,8 +509,8 @@
 
 .evidenceRecord {
   display: grid;
-  grid-template-columns: minmax(130px, 0.45fr) minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
   border: 1px solid var(--color-border);
   border-radius: 12px;

@@ -3,8 +3,14 @@ export type StoredDraftPhoto = {
   file: File;
 };
 
-const databaseName = "reefcare-my-drafts";
+import { readStoredAuth } from "@/lib/api/token-store";
+
+const databaseNamePrefix = "reefcare-my-drafts-v2";
 const storeName = "report-photos";
+
+export function draftPhotoDatabaseName(userId: number | null) {
+  return `${databaseNamePrefix}-${userId ?? "anonymous"}`;
+}
 
 export function createPhotoId(file: File) {
   return `${file.name}-${file.size}-${file.lastModified}`;
@@ -12,7 +18,10 @@ export function createPhotoId(file: File) {
 
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = window.indexedDB.open(databaseName, 1);
+    const request = window.indexedDB.open(
+      draftPhotoDatabaseName(readStoredAuth()?.user.id ?? null),
+      1,
+    );
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(storeName)) {

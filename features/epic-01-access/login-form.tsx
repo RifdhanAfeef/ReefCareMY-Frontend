@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
 
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,19 +22,10 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const user = await login(email, password);
-      const requestedNext = searchParams.get("next");
-      const roleDestination = user.role === "case_coordinator"
-        ? "/coordinator/report-queue"
-        : user.role === "system_administrator"
-          ? "/admin/users"
-          : "/my-reports";
-      const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
-        ? requestedNext
-        : roleDestination;
-      router.push(next);
+      await login(email, password);
+      router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(userFacingError(err, "Email or password is incorrect."));
     } finally {
       setSubmitting(false);
     }
