@@ -117,10 +117,8 @@ export function LandingPage() {
           <div className={styles.heroControls}>
             <div className={styles.actions}>
               <Link className={styles.primaryButton} href="/learn">Learn what to report</Link>
-              {signedIn ? (
+              {signedIn && (
                 <Link className={styles.secondaryButton} href={signedInDestination.href}>{signedInDestination.label}</Link>
-              ) : (
-                <Link className={styles.secondaryButton} href="/register">Create observer account</Link>
               )}
             </div>
             {!signedIn && status !== "loading" && (

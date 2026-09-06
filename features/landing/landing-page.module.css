@@ -1,4 +1,4 @@
-.page { overflow: hidden; background: var(--color-page); }
+.page { background: var(--color-page); }
 .hero { position: relative; isolation: isolate; width: min(calc(100% - 64px), var(--content-width)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(460px, .98fr); gap: clamp(48px, 7vw, 110px); align-items: center; padding: 78px 0 70px; }
 .hero::before, .threatSection::before { content: ""; position: absolute; inset: 0 calc(50% - 50vw); z-index: -2; pointer-events: none; }
 .hero::before { background: linear-gradient(135deg, #ffffff 0%, #f7fbfa 50%, #fcfefe 100%); }
@@ -49,26 +49,20 @@
 .steps { position: relative; display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
 .steps::before { content: ""; position: absolute; top: 43px; bottom: 39px; left: 22px; width: 2px; background: repeating-linear-gradient(to bottom, #72bdb4 0 7px, transparent 7px 13px); transform-origin: top; }
 .steps li { position: relative; display: grid; grid-template-columns: 54px 1fr; gap: 18px; padding: 0 0 30px; }
-.steps li > span { width: 46px; height: 46px; display: grid; place-items: center; z-index: 1; color: var(--color-primary); background: #fff; border: 3px solid var(--color-primary); border-radius: 50%; box-shadow: 0 6px 14px rgba(20,54,66,.12); font-weight: 900; transition: color 220ms ease, background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease; }
-.steps li:hover > span { color: #fff; background: var(--color-primary); box-shadow: 0 9px 20px rgba(15,139,141,.25); transform: scale(1.08); }
+.steps li > span { width: 46px; height: 46px; display: grid; place-items: center; z-index: 1; color: var(--color-primary); background: #fff; border: 3px solid var(--color-primary); border-radius: 50%; box-shadow: 0 6px 14px rgba(20,54,66,.12); font-weight: 900; }
 .steps h3 { margin: 5px 0 5px; font-size: 19px; }
 .steps p { margin: 0; color: var(--color-muted); }
 .motionReady .processIntro, .motionReady .sectionHeading { opacity: 0; transform: translateY(18px); }
 .motionReady .steps::before { transform: scaleY(0); }
-.motionReady .steps li, .motionReady .threatCard { opacity: 0; transform: translateY(24px); }
+.motionReady .steps li { opacity: 0; transform: translateY(24px); }
 .motionReady.isVisible .processIntro, .motionReady.isVisible .sectionHeading { opacity: 1; transform: none; transition: opacity 540ms ease, transform 540ms cubic-bezier(.2,.8,.2,1); }
 .motionReady.isVisible .steps::before { transform: scaleY(1); transition: transform 950ms cubic-bezier(.2,.75,.25,1) 180ms; }
-.motionReady.isVisible .steps li, .motionReady.isVisible .threatCard { opacity: 1; transform: none; }
+.motionReady.isVisible .steps li { opacity: 1; transform: none; }
 .motionReady.isVisible .steps li { transition: opacity 480ms ease, transform 520ms cubic-bezier(.2,.8,.2,1); }
 .motionReady.isVisible .steps li:nth-child(1) { transition-delay: 180ms; }
 .motionReady.isVisible .steps li:nth-child(2) { transition-delay: 330ms; }
 .motionReady.isVisible .steps li:nth-child(3) { transition-delay: 480ms; }
 .motionReady.isVisible .steps li:nth-child(4) { transition-delay: 630ms; }
-.motionReady.isVisible .threatCard:nth-child(1) { transition-delay: 110ms; }
-.motionReady.isVisible .threatCard:nth-child(2) { transition-delay: 210ms; }
-.motionReady.isVisible .threatCard:nth-child(3) { transition-delay: 310ms; }
-.motionReady.isVisible .threatCard:nth-child(4) { transition-delay: 410ms; }
-.motionReady.isVisible .threatCard:hover, .motionReady.isVisible .threatCard:focus-visible { transform: translateY(-8px); transition-delay: 0ms; }
 @keyframes heroRiseIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -95,4 +89,4 @@
   .heroCopy .eyebrow, .heroCopy h1, .heroCopy .lead, .heroCopy .heroControls, .visualPanel, .reefPhoto, .causticLayerOne, .causticLayerTwo, .processIntro, .sectionHeading, .steps::before, .steps li, .threatCard, .threatIcon, .cardArrow { opacity: 1 !important; transform: none !important; animation: none !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
 }
 @media (max-width: 1060px) { .hero { grid-template-columns: 1fr; } .heroCopy { max-width: 850px; } .visualPanel { max-width: 760px; } .threatGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 760px) { .hero, .section { width: min(calc(100% - 32px), var(--content-width)); } .hero { grid-template-columns: minmax(0, 1fr); padding: 54px 0; } .hero h1 { font-size: clamp(40px, 12vw, 58px); } .section { padding: 75px 0; } .sectionHeading { align-items: flex-start; flex-direction: column; } .threatGrid { grid-template-columns: 1fr; } .processSection { grid-template-columns: 1fr; padding: 72px 20px; } .actions, .actions > * { width: 100%; } .signInPrompt { width: 100%; } }
+@media (max-width: 760px) { .hero, .section { width: min(calc(100% - 32px), var(--content-width)); } .hero { grid-template-columns: minmax(0, 1fr); padding: 54px 0; } .hero h1 { font-size: clamp(40px, 12vw, 58px); } .section { padding: 75px 0; } .sectionHeading { align-items: flex-start; flex-direction: column; } .threatGrid { grid-template-columns: 1fr; } .processSection { grid-template-columns: 1fr; padding: 72px 20px; } .actions, .actions > * { width: 100%; } .signInPrompt { width: 100%; } .waterCaustics { display: none; } }

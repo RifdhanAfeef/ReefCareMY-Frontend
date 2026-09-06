@@ -38,8 +38,8 @@ page or button. It also needs to:
 Typed coordinator requests are in `lib/api/coordinatorApi.ts` and are used by
 the queue and case workflow. Registration
 uses `POST /api/v1/auth/register`, while login sends form fields named
-`username` and `password`. Observer registration follows the latest backend
-rule: 12–128 characters with at least four different characters. It never
+`username` and `password`. Observer registration follows the Iteration 1 rule:
+6–128 characters with at least four different characters. It never
 includes a role selector.
 
 See `docs/BACKEND_INTEGRATION_READINESS.md` for the full integration list.

@@ -60,6 +60,7 @@ export async function getCoordinatorEvidence(
 ): Promise<Blob> {
   return apiBlobRequest({
     path: `/api/v1/coordinator/reports/${encodeURIComponent(reportReference)}/evidence/${encodeURIComponent(String(evidenceId))}`,
+    timeoutMs: 60_000,
   });
 }
 

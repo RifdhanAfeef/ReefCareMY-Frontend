@@ -42,6 +42,19 @@ describe("Administrator account creation", () => {
     expect(push).toHaveBeenCalledWith("/admin/users");
   });
 
+  it("accepts the Iteration 1 six-character temporary-password minimum", async () => {
+    render(<NewUserForm existingUsers={[]} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText("Display name"), "Farah Aziz");
+    await user.type(screen.getByLabelText("Email"), "farah@example.org");
+    await user.type(screen.getByLabelText("Temporary password"), "abcdef");
+    await user.type(screen.getByLabelText("Confirm temporary password"), "abcdef");
+
+    expect(screen.getByText("Met: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create user account" })).toBeEnabled();
+  });
+
   it("shows locally created accounts in the directory", async () => {
     window.localStorage.setItem(
       "reefcare.admin-created-users",

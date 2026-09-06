@@ -3,14 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/forms/password-requirements";
 import {
   MAX_DISPLAY_NAME_LENGTH,
-  MAX_PASSWORD_LENGTH,
-  MIN_DISTINCT_PASSWORD_CHARACTERS,
-  MIN_PASSWORD_LENGTH,
   passwordMeetsRequirements,
   register,
 } from "@/lib/api/authApi";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
 
@@ -29,7 +28,6 @@ export function RegisterForm() {
   const emailValid = EMAIL_PATTERN.test(email.trim());
   const displayNameValid =
     displayName.trim().length > 0 && displayName.trim().length <= MAX_DISPLAY_NAME_LENGTH;
-  const passwordInvalid = password.length > 0 && !passwordMeetsRequirements(password);
   const passwordValid = passwordMeetsRequirements(password);
   const canSubmit = emailValid && displayNameValid && passwordValid && !submitting;
 
@@ -46,7 +44,12 @@ export function RegisterForm() {
       await login(email, password);
       router.push("/my-reports");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const serverStillRequiresTwelveCharacters = err instanceof ApiError &&
+        err.status === 422 &&
+        /at least 12 characters/i.test(err.message);
+      setError(serverStillRequiresTwelveCharacters
+        ? "The registration service still has an outdated 12-character password rule. Use 12 or more characters for now, or ask the backend team to update its minimum to 6."
+        : err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }
@@ -87,28 +90,14 @@ export function RegisterForm() {
         />
       </label>
 
-      <div className={styles.field}>
-        <label htmlFor="register-password">Password</label>
-        <input
-          id="register-password"
-          type="password"
-          name="password"
-          autoComplete="new-password"
-          required
-          minLength={MIN_PASSWORD_LENGTH}
-          maxLength={MAX_PASSWORD_LENGTH}
-          aria-describedby="register-password-hint"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          disabled={submitting}
-        />
-        <span
-          id="register-password-hint"
-          className={passwordInvalid ? styles.hintError : styles.hint}
-        >
-          {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters with at least {MIN_DISTINCT_PASSWORD_CHARACTERS} different characters
-        </span>
-      </div>
+      <PasswordInput
+        className={styles.field}
+        id="register-password"
+        label="Password"
+        value={password}
+        onChange={setPassword}
+        disabled={submitting}
+      />
 
       <button className={styles.submit} type="submit" disabled={!canSubmit}>
         {submitting ? "Creating account…" : "Create account"}

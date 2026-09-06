@@ -48,5 +48,6 @@ export async function submitReport(
     path: "/api/v1/reports",
     method: "POST",
     body: formData,
+    timeoutMs: 60_000,
   });
 }

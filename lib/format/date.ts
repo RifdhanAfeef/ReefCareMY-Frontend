@@ -45,6 +45,20 @@ export function inputDateToDisplayValue(value: string) {
   return `${day}/${month}/${year}`;
 }
 
+export function formatDisplayDateInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)]
+    .filter(Boolean);
+  return parts.join("/");
+}
+
+export function todayInputDateValue(now = new Date()) {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function displayDateToIsoDate(value: string) {
   if (!isValidDisplayDate(value) || !value) {
     throw new Error("Enter a valid date in dd/mm/yyyy format.");

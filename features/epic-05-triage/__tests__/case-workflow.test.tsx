@@ -39,6 +39,7 @@ const report: CoordinatorCase = {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  window.sessionStorage.clear();
   Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:reef-evidence") });
   Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
   mockedGetCoordinatorCase.mockResolvedValue(report);
@@ -89,6 +90,8 @@ describe("Coordinator case workflow", () => {
     expect(await screen.findByRole("img", { name: "Submitted evidence 13" })).toHaveAttribute("src", "blob:reef-evidence");
     expect(mockedGetCoordinatorEvidence).toHaveBeenCalledWith(report.reportReference, 13);
     expect(screen.queryByRole("button", { name: /open evidence/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/03\/09\/2026, \d{1,2}:20 [AP]M/)).toBeInTheDocument();
+    expect(screen.queryByText("2026-09-03T04:20:00Z")).not.toBeInTheDocument();
   });
 
   it("claims a queue report through the backend before loading protected details", async () => {
@@ -142,10 +145,22 @@ describe("Coordinator case workflow", () => {
     render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
 
     const startButton = await screen.findByRole("button", { name: "Start evidence assessment" });
+    expect(screen.getByRole("button", { name: "Request more information" })).toBeDisabled();
+    expect(screen.getByText("Start the evidence assessment before requesting more information.")).toBeInTheDocument();
     expect(startButton).toBeEnabled();
     await user.click(startButton);
     expect(screen.getByRole("heading", { name: "Assess the submitted evidence" })).toBeInTheDocument();
     expect(mockedStartReview).toHaveBeenCalledWith(report.reportReference);
+    expect(screen.getByLabelText(/Assessment note/)).toHaveValue("");
+  });
+
+  it("flags an omitted observedAt value instead of presenting it as observer-supplied missing data", async () => {
+    mockedGetCoordinatorCase.mockResolvedValueOnce({ ...report, observedAt: null });
+
+    render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
+
+    expect(await screen.findByText("Observation date could not be loaded")).toBeInTheDocument();
+    expect(screen.getByText(/case response did not include/)).toBeInTheDocument();
   });
 
   it("records a Not Substantiated evidence outcome through the backend", async () => {
@@ -233,8 +248,14 @@ describe("Coordinator case workflow", () => {
       report.reportReference,
       expect.objectContaining({ responseType: "monitoring_only" }),
     );
+    expect(mockedRecordCaseDecision).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole("button", { name: "Record a closure outcome" }));
+    expect(screen.getByLabelText(/Referred to another organisation/)).toBeDisabled();
+    expect(screen.getByLabelText(/Monitored, no action required/)).toBeEnabled();
+    expect(screen.getByLabelText(/Not substantiated/)).toBeDisabled();
+    expect(screen.getByLabelText(/No responsible partner available/)).toBeDisabled();
+    expect(screen.getByLabelText(/Logged for reference/)).toBeEnabled();
     await user.click(screen.getByLabelText(/Monitored, no action required/));
     await user.type(screen.getByLabelText("Public closure note *"), "Reviewed and retained for monitoring.");
     await user.click(screen.getByRole("button", { name: "Close case" }));
@@ -244,6 +265,55 @@ describe("Coordinator case workflow", () => {
       closureReasonCode: "monitored_no_action",
       publicClosureNote: "Reviewed and retained for monitoring.",
     });
+  });
+
+  it("restores a saved response decision and closure entry point after refresh", async () => {
+    const user = userEvent.setup();
+    const firstRender = render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
+
+    await user.click(await screen.findByRole("button", { name: "Start evidence assessment" }));
+    await user.click(screen.getByLabelText("Yes — the evidence can be assessed"));
+    await user.click(screen.getByLabelText("Yes — continue to a response decision"));
+    await user.click(screen.getByLabelText("No matching report found"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByLabelText(/Monitoring Only/));
+    await user.click(screen.getByRole("button", { name: "Record response" }));
+    expect(await screen.findByRole("heading", { name: "Response decision recorded" })).toBeInTheDocument();
+
+    firstRender.unmount();
+    mockedGetCoordinatorCase.mockResolvedValue({
+      ...report,
+      statusCode: "evidence_accepted",
+      statusLabel: "Evidence Accepted",
+    });
+    render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
+
+    expect(await screen.findByRole("heading", { name: "Response decision recorded" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Monitoring Recommended" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Record a closure outcome" })).toBeEnabled();
+  });
+
+  it("records the entered referral recipient as referredTo", async () => {
+    const user = userEvent.setup();
+    render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
+
+    await user.click(await screen.findByRole("button", { name: "Start evidence assessment" }));
+    await user.click(screen.getByLabelText("Yes — the evidence can be assessed"));
+    await user.click(screen.getByLabelText("Yes — continue to a response decision"));
+    await user.click(screen.getByLabelText("No matching report found"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByLabelText(/Refer \/ Share for Possible Response/));
+    await user.click(screen.getByRole("button", { name: "Record response" }));
+    await user.type(screen.getByLabelText("Recipient organisation or contact *"), "Tioman Marine Park Department");
+    await user.click(screen.getByRole("button", { name: "Record referral" }));
+
+    expect(mockedRecordCaseDecision).toHaveBeenCalledWith(
+      report.reportReference,
+      expect.objectContaining({
+        responseType: "refer_or_share",
+        referredTo: "Tioman Marine Park Department",
+      }),
+    );
   });
 
   it("shows backend load errors and retries the owned-case request", async () => {

@@ -87,17 +87,20 @@ export function ReportReview() {
       {submissionError && <section className={styles.errorBox} role="alert"><strong>Report not submitted</strong><p>{submissionError}</p></section>}
 
       <div className={styles.reviewLayout}>
-        <section className={styles.card}>
-          <div className={styles.sectionHeader}><div><h2>Observation summary</h2><p>This is the information that will be lodged with ReefCare MY.</p></div><Link className={styles.textButton} href="/report-a-reef">Edit observation</Link></div>
-          {photos.length > 0 && <div className={styles.reviewPhotos}>{photos.map((photo) => <article className={styles.reviewPhoto} key={photo.id}><Image className={styles.photoImage} src={photo.previewUrl} alt={`Evidence preview: ${photo.file.name}`} width={520} height={320} unoptimized /><p title={photo.file.name}>{photo.file.name}</p></article>)}</div>}
-          <dl className={styles.summaryList}>
-            <div><dt>Threat category</dt><dd>{threat?.label ?? "Not provided"}</dd></div>
-            <div><dt>Observed</dt><dd>{reportDraft.observationDate && reportDraft.observationTime ? `${reportDraft.observationDate}, ${reportDraft.observationTime}` : "Not provided"}</dd></div>
-            <div><dt>Estimated depth</dt><dd>{reportDraft.estimatedDepthMetres ? `${reportDraft.estimatedDepthMetres} m` : "Not provided"}</dd></div>
-            <div><dt>Photographs</dt><dd>{photos.length || "Not provided"}</dd></div>
-            <div className={styles.fullWidth}><dt>Description</dt><dd className={styles.description}>{reportDraft.description.trim() || "Not provided"}</dd></div>
-          </dl>
-        </section>
+        <div className={styles.reviewMain}>
+          <section className={styles.card}>
+            <div className={styles.sectionHeader}><div><h2>Observation summary</h2><p>This is the information that will be lodged with ReefCare MY.</p></div><Link className={styles.textButton} href="/report-a-reef">Edit observation</Link></div>
+            {photos.length > 0 && <div className={styles.reviewPhotos}>{photos.map((photo) => <article className={styles.reviewPhoto} key={photo.id}><Image className={styles.photoImage} src={photo.previewUrl} alt={`Evidence preview: ${photo.file.name}`} width={520} height={320} unoptimized /><p title={photo.file.name}>{photo.file.name}</p></article>)}</div>}
+            <dl className={styles.summaryList}>
+              <div><dt>Threat category</dt><dd>{threat?.label ?? "Not provided"}</dd></div>
+              <div><dt>Observed</dt><dd>{reportDraft.observationDate && reportDraft.observationTime ? `${reportDraft.observationDate}, ${reportDraft.observationTime}` : "Not provided"}</dd></div>
+              <div><dt>Estimated depth</dt><dd>{reportDraft.estimatedDepthMetres ? `${reportDraft.estimatedDepthMetres} m` : "Not provided"}</dd></div>
+              <div><dt>Photographs</dt><dd>{photos.length || "Not provided"}</dd></div>
+              <div className={styles.fullWidth}><dt>Description</dt><dd className={styles.description}>{reportDraft.description.trim() || "Not provided"}</dd></div>
+            </dl>
+          </section>
+          <ReviewLocationSummary />
+        </div>
 
         <aside className={styles.sideCard}>
           <h2>Before submitting</h2>
@@ -106,8 +109,6 @@ export function ReportReview() {
           <button className={styles.primaryButton} type="button" disabled={missingItems.length > 0 || submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit report"}</button>
         </aside>
       </div>
-
-      <ReviewLocationSummary />
     </div>
   );
 }

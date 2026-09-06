@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -63,6 +63,8 @@ export function MalaysiaMap({
   interactive?: boolean;
   onSetPin?: (pin: MapPin) => void;
 }) {
+  const [tilesUnavailable, setTilesUnavailable] = useState(false);
+
   return (
     <div className={styles.map}>
       <MapContainer
@@ -77,6 +79,9 @@ export function MalaysiaMap({
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          eventHandlers={{
+            tileerror: () => setTilesUnavailable(true),
+          }}
         />
         <MapInteraction interactive={interactive} onSetPin={onSetPin} />
         <InitialView pin={pin} />
@@ -95,6 +100,11 @@ export function MalaysiaMap({
       </MapContainer>
       {interactive && !pin && (
         <p className={styles.mapInstruction}>Zoom or drag the map, then click to place a pin.</p>
+      )}
+      {tilesUnavailable && (
+        <p className={styles.mapFallback} role="status">
+          The map background is unavailable. You can still use the named dive site or enter coordinates.
+        </p>
       )}
     </div>
   );

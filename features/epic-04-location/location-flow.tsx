@@ -37,8 +37,25 @@ const MalaysiaMap = dynamic(
   },
 );
 
-function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <header className={styles.heading}><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{description}</p></header>;
+type ProgressStep = "session" | "location" | "confirm" | "privacy" | "review";
+
+const progressSteps: Array<{ value: ProgressStep; label: string }> = [
+  { value: "session", label: "Dive Session" },
+  { value: "location", label: "Location" },
+  { value: "confirm", label: "Accuracy" },
+  { value: "privacy", label: "Privacy" },
+  { value: "review", label: "Location saved" },
+];
+
+function PageHeading({ eyebrow, title, description, currentStep }: { eyebrow: string; title: string; description: string; currentStep: ProgressStep }) {
+  const activeIndex = progressSteps.findIndex((item) => item.value === currentStep);
+
+  return <>
+    <header className={styles.heading}><p className={styles.eyebrow}>{eyebrow}</p><h1 data-location-flow-heading tabIndex={-1}>{title}</h1><p>{description}</p></header>
+    <ol className={styles.progress} aria-label="Report location progress">
+      {progressSteps.map((item, index) => <li key={item.value} data-status={index < activeIndex ? "complete" : index === activeIndex ? "current" : "upcoming"} aria-current={index === activeIndex ? "step" : undefined}><span aria-hidden="true">{index + 1}</span><strong>{item.label}</strong></li>)}
+    </ol>
+  </>;
 }
 
 function pinFromPercent(x: number, y: number): MapPin {
@@ -133,6 +150,13 @@ export function LocationFlow() {
     };
   }, [referenceReloadKey, updateLocationDraft]);
 
+  useEffect(() => {
+    const heading = document.querySelector<HTMLElement>("[data-location-flow-heading]");
+    heading?.focus({ preventScroll: true });
+    const reducedMotion = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+  }, [step]);
+
   const createSession = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.site.trim()) { setSessionError("Enter or select a named dive site."); return; }
@@ -202,7 +226,7 @@ export function LocationFlow() {
   };
 
   if (step === "create") return <section className={styles.page}>
-    <PageHeading eyebrow="Report a Reef / Dive details" title="Add a Dive Session" description="Enter the dive site, then add the date, dive number or approximate times if known." />
+    <PageHeading eyebrow="Report a Reef / Dive details" title="Add a Dive Session" description="Enter the dive site, then add the date, dive number or approximate times if known." currentStep="session" />
     <form className={styles.formLayout} onSubmit={createSession} noValidate>
       <section className={styles.card}><h2>Session details</h2><div className={styles.formGrid}>
         <label className={styles.field}>Named dive site *<span>Select from ReefCare&apos;s approved site list</span><select value={form.site} disabled={loadingReferences || diveSites.length === 0} onChange={(event) => { updateForm({ site: event.target.value }); setSessionError(""); }} aria-invalid={Boolean(sessionError)} aria-describedby={sessionError ? "site-error" : undefined}><option value="">{loadingReferences ? "Loading dive sites…" : "Select a dive site"}</option>{diveSites.map((site) => <option value={site.diveSiteId} key={site.diveSiteId}>{site.name} — {site.publicAreaLabel}</option>)}</select></label>
@@ -213,37 +237,59 @@ export function LocationFlow() {
     </form>
   </section>;
 
-  if (!session && step !== "session") return <section className={styles.page}><PageHeading eyebrow="Report a Reef / Dive details" title="Choose a Dive Session first" description="Choose or create a Dive Session before adding location details." /><section className={styles.card}>{sessionLoadError && <p className={styles.errorText} role="alert">{sessionLoadError}</p>}<button className={styles.primaryButton} type="button" onClick={() => setStep("session")}>Return to Dive Sessions</button></section></section>;
+  if (loadingReferences) return <section className={styles.page}>
+    <BackButton fallbackHref="/report-a-reef" label="Back to report form" />
+    <PageHeading eyebrow="Report a Reef / Dive details" title="Preparing your Dive Sessions" description="We are checking for sessions that can be linked to this observation." currentStep="session" />
+    <section className={`${styles.card} ${styles.stateCard}`} role="status"><strong>Loading Dive Sessions...</strong><p className={styles.supporting}>This should only take a moment.</p></section>
+  </section>;
+
+  if (sessionLoadError) return <section className={styles.page}>
+    <BackButton fallbackHref="/report-a-reef" label="Back to report form" />
+    <PageHeading eyebrow="Report a Reef / Dive details" title="We could not load your Dive Sessions" description="Try the request again before choosing or creating a session." currentStep="session" />
+    <section className={`${styles.card} ${styles.stateCard}`} role="alert"><p className={styles.errorText}>{sessionLoadError}</p><button className={styles.primaryButton} type="button" onClick={retryReferences}>Try again</button></section>
+  </section>;
+
+  if (sessions.length === 0) return <section className={styles.page}>
+    <BackButton fallbackHref="/report-a-reef" label="Back to report form" />
+    <PageHeading eyebrow="Report a Reef / Dive details" title="Create your first Dive Session" description="A Dive Session keeps the site, date and photographs from the same dive together." currentStep="session" />
+    <section className={`${styles.card} ${styles.emptyState}`}>
+      <div><h2>No Dive Sessions yet</h2><p className={styles.supporting}>Add one session to continue this report. You only need a named dive site and dive date.</p></div>
+      {siteLoadError && <div className={styles.inlineError} role="alert"><p>{siteLoadError}</p><button className={styles.textRetry} type="button" onClick={retryReferences}>Try again</button></div>}
+      <button className={styles.primaryButton} type="button" disabled={Boolean(siteLoadError)} onClick={() => setStep("create")}>Create Dive Session</button>
+    </section>
+  </section>;
+
+  if (!session && step !== "session") return <section className={styles.page}><PageHeading eyebrow="Report a Reef / Dive details" title="Choose a Dive Session first" description="Choose or create a Dive Session before adding location details." currentStep="session" /><section className={styles.card}>{sessionLoadError && <p className={styles.errorText} role="alert">{sessionLoadError}</p>}<button className={styles.primaryButton} type="button" onClick={() => setStep("session")}>Return to Dive Sessions</button></section></section>;
 
   if (step === "location") return <section className={styles.page}>
-    <PageHeading eyebrow="Report a Reef / Location" title="Where on the reef did you observe it?" description="Use the Dive Session site, select a map point, enter coordinates or say that the exact location is unknown." />
-    <div className={`${styles.choiceGrid} ${styles.locationChoices}`}><section className={`${styles.card} ${styles.selectedCard}`}><h2>General dive-site location</h2><label className={styles.field}>Named dive site *<select value={session.site} disabled><option>{session.site}</option></select></label><div className={styles.infoBox}><strong>Exact location optional</strong><p>You can continue with the named site when precise coordinates are unavailable.</p></div><button className={styles.primaryButton} type="button" onClick={() => continueFromLocation("dive_site")}>Use dive-site location</button><button className={styles.textRetry} type="button" onClick={continueWithUnknownLocation}>I don&apos;t know the exact location</button></section>
+    <PageHeading eyebrow="Report a Reef / Location" title="Where on the reef did you observe it?" description="Use the Dive Session site, select a map point, enter coordinates or say that the exact location is unknown." currentStep="location" />
+    <div className={`${styles.choiceGrid} ${styles.locationChoices}`}><section className={`${styles.card} ${styles.selectedCard}`}><h2>General dive-site location</h2><div className={styles.readOnlyLabel}>Named dive site *<p className={styles.readOnlyValue}>{session.site}</p></div><div className={styles.infoBox}><strong>Exact location optional</strong><p>You can continue with the named site when precise coordinates are unavailable.</p></div><button className={styles.primaryButton} type="button" onClick={() => continueFromLocation("dive_site")}>Use dive-site location</button><button className={styles.textRetry} type="button" onClick={continueWithUnknownLocation}>I don&apos;t know the exact location</button></section>
       <section className={styles.card}><h2>Select on map</h2><p className={styles.supporting}>Select the observed location on the map of Malaysia.</p><MapPreview pin={pin} interactive onSetPin={(nextPin) => updateLocationDraft({ pin: nextPin })} />{coordinates && <p className={styles.coordinateReadout}>Selected coordinates: {coordinates}</p>}<button className={styles.secondaryButton} type="button" disabled={!pin} onClick={() => continueFromLocation("map_pin")}>Confirm map pin</button></section>
       <section className={styles.card}><h2>Enter coordinates</h2><p className={styles.supporting}>Use coordinates from a dive computer, GPS device or another trusted source.</p><div className={styles.coordinateFields}><label className={styles.field}>Latitude<input type="number" min={malaysiaBounds.south} max={malaysiaBounds.north} step="any" value={manualLatitude} onChange={(event) => { setManualLatitude(event.target.value); setCoordinateError(""); }} placeholder="3.15021" /></label><label className={styles.field}>Longitude<input type="number" min={malaysiaBounds.west} max={malaysiaBounds.east} step="any" value={manualLongitude} onChange={(event) => { setManualLongitude(event.target.value); setCoordinateError(""); }} placeholder="104.21864" /></label></div>{coordinateError && <p className={styles.errorText} role="alert">{coordinateError}</p>}<button className={styles.secondaryButton} type="button" onClick={continueWithManualCoordinates}>Use these coordinates</button></section></div>
     <aside className={styles.privacyStrip}><strong>Coordinates are optional</strong><p>Coordinates are stored only when you provide a map pin. Other users receive only the appropriate general-location view.</p></aside><button className={`${styles.secondaryButton} ${styles.backOutside}`} type="button" onClick={() => setStep("session")}>Back to Dive Session</button>
   </section>;
 
   if (step === "confirm") return <section className={styles.page}>
-    <PageHeading eyebrow="Report a Reef / Location" title="Confirm the map location" description="Check the location and choose the option that best describes its accuracy." />
+    <PageHeading eyebrow="Report a Reef / Location" title="Confirm the map location" description="Check the location and choose the option that best describes its accuracy." currentStep="confirm" />
     <form className={styles.confirmGrid} onSubmit={confirmLocation}><section className={styles.card}><h2>{session.site}</h2><MapPreview pin={pin} /><p className={styles.mapCaption}>{hasExactCoordinates ? `${locationSource === "manual_coordinates" ? "Entered coordinates" : "Selected map pin"}${coordinates ? ` — ${coordinates}` : ""}` : confidence === "unsure" ? "Exact location unknown" : "Named dive-site location only"}</p></section><aside className={styles.card}><fieldset className={styles.confidenceList}><legend>Location confidence</legend>{availableConfidenceOptions.map((item) => <label key={item.value}><input type="radio" name="confidence" value={item.value} checked={confidence === item.value} onChange={() => updateLocationDraft({ confidence: item.value })} />{item.label}</label>)}</fieldset><p className={styles.supporting}>{hasExactCoordinates ? "Choose how closely the coordinates represent the observed location." : "Choose Dive-site only or Unsure."}</p>{confidenceError && <p className={styles.errorText} role="alert">{confidenceError}</p>}<div className={styles.actions}><button className={styles.secondaryButton} type="button" onClick={() => setStep("location")}>Back</button><button className={styles.primaryButton} type="submit">Confirm location</button></div></aside></form>
   </section>;
 
   if (step === "privacy") return <section className={styles.page}>
-    <PageHeading eyebrow="Report a Reef / Location privacy" title="Review your location privacy" description="See how ReefCare protects the precise location you submitted." />
+    <PageHeading eyebrow="Report a Reef / Location privacy" title="Review your location privacy" description="See how ReefCare protects the precise location you submitted." currentStep="privacy" />
     <div className={styles.privacyGrid}><section className={styles.card}><h2>Your submitted location</h2><MapPreview pin={pin} /><p><strong>{hasExactCoordinates ? `Coordinates within ${session.site}` : session.site}</strong></p><p>Confidence: <strong>{confidenceLabel}</strong></p><p className={styles.supporting}>You will see this location in your own report.</p></section><section className={`${styles.card} ${styles.sidePanel}`}><h2>Who can see what?</h2><dl className={styles.accessList}><div><dt>You</dt><dd>Your submitted location</dd></div><div><dt>Claiming Case Coordinator</dt><dd>Your location and accuracy</dd></div><div><dt>Other coordinators</dt><dd>General site until they claim the case</dd></div><div><dt>System Administrator</dt><dd>General site only</dd></div><div><dt>Unauthenticated visitors</dt><dd>Report location is not displayed</dd></div></dl></section></div>
     <div className={styles.splitActions}><button className={styles.secondaryButton} type="button" onClick={() => setStep("confirm")}>Back</button><button className={styles.primaryButton} type="button" onClick={() => setStep("saved")}>Confirm privacy and continue</button></div>
   </section>;
 
   if (step === "saved") return <section className={styles.page}>
-    <PageHeading eyebrow="Report a Reef / Location" title="Location saved to your draft" description="Review the Dive Session, map pin and location accuracy saved with this report draft." />
+    <PageHeading eyebrow="Report a Reef / Location" title="Location saved to your draft" description="Review the Dive Session, map pin and location accuracy saved with this report draft." currentStep="review" />
     <div className={styles.savedGrid}><section className={styles.card}><h2>Current report draft</h2><p className={styles.supporting}>A report reference will be created after final submission.</p><div className={styles.savedContent}><MapPreview pin={pin} /><dl className={styles.detailList}><div><dt>Dive Session</dt><dd>{sessionTitle}</dd></div><div><dt>Location source</dt><dd>{locationSource === "manual_coordinates" ? "Entered coordinates" : locationSource === "map_pin" ? "Map pin" : confidence === "unsure" ? "Exact location unknown" : "Named dive site"}</dd></div><div><dt>Location confidence</dt><dd>{confidenceLabel}</dd></div>{coordinates && <div><dt>Selected coordinates</dt><dd>{coordinates}</dd></div>}</dl></div></section><aside className={styles.sidePanel}><h2>Privacy reminder</h2><p>Exact submitted coordinates are visible only to you and the Case Coordinator who claims the case.</p><div className={styles.purpleBox}><strong>General site</strong><p>{session.site} is retained as the restricted location view.</p></div></aside></div>
     <div className={styles.splitActions}><button className={styles.secondaryButton} type="button" onClick={() => setStep("privacy")}>Back</button><Link className={styles.primaryButton} href="/report-a-reef/review">Continue to review</Link></div>
   </section>;
 
   return <section className={styles.page}>
     <BackButton fallbackHref="/report-a-reef" label="Back to report form" />
-    <PageHeading eyebrow="Report a Reef / Dive details" title="Which dive was this observation from?" description="Select a recent dive or add a new Dive Session with a named site and dive date." />
-    <div className={styles.choiceGrid}><section className={`${styles.card} ${styles.selectedCard}`}><h2>Use an existing Dive Session</h2><p className={styles.supporting}>Choose a recent session connected to this report.</p>{sessionLoadError && <div className={styles.inlineError} role="alert"><p>{sessionLoadError}</p><button className={styles.textRetry} type="button" onClick={retryReferences}>Try again</button></div>}<fieldset className={styles.sessionList}><legend className="sr-only">Recent Dive Sessions</legend>{loadingReferences && <p>Loading Dive Sessions…</p>}{!loadingReferences && !sessionLoadError && sessions.length === 0 && <p>No existing Dive Sessions were found. Create one to continue.</p>}{sessions.map((item) => <label className={styles.sessionOption} key={item.id}><input type="radio" name="dive-session" value={item.id} checked={selectedSessionId === item.id} onChange={() => updateLocationDraft({ selectedSessionId: item.id })} /><span><strong>{item.site}{item.label ? ` - ${item.label}` : ""}</strong><small>{[item.date, item.start && item.end ? `${item.start} to ${item.end}` : item.start].filter(Boolean).join(" - ") || "Optional details not provided"}</small></span></label>)}</fieldset><button className={styles.primaryButton} type="button" disabled={!session || loadingReferences} onClick={() => setStep("location")}>Use selected session</button></section>
+    <PageHeading eyebrow="Report a Reef / Dive details" title="Which dive was this observation from?" description="Select a recent dive or add a new Dive Session with a named site and dive date." currentStep="session" />
+    <div className={styles.choiceGrid}><section className={`${styles.card} ${styles.selectedCard}`}><h2>Use an existing Dive Session</h2><p className={styles.supporting}>Choose a recent session connected to this report.</p><fieldset className={styles.sessionList}><legend className="sr-only">Recent Dive Sessions</legend>{sessions.map((item) => <label className={styles.sessionOption} key={item.id}><input type="radio" name="dive-session" value={item.id} checked={selectedSessionId === item.id} onChange={() => updateLocationDraft({ selectedSessionId: item.id })} /><span><strong>{item.site}{item.label ? ` - ${item.label}` : ""}</strong><small>{[item.date, item.start && item.end ? `${item.start} to ${item.end}` : item.start].filter(Boolean).join(" - ") || "Optional details not provided"}</small></span></label>)}</fieldset><button className={styles.primaryButton} type="button" disabled={!session} onClick={() => setStep("location")}>Use selected session</button></section>
       <section className={styles.card}><h2>Create a new Dive Session</h2><p className={styles.supporting}>Use this when the observation is not linked to an existing session.</p>{siteLoadError && <div className={styles.inlineError} role="alert"><p>{siteLoadError}</p><button className={styles.textRetry} type="button" onClick={retryReferences}>Try again</button></div>}<div className={styles.requirementGroup}><h3>Required details</h3><p><span aria-hidden="true">✓</span> Named dive site</p><p><span aria-hidden="true">✓</span> Dive date</p></div><div className={styles.requirementGroup}><h3>Optional details</h3><p><span aria-hidden="true">□</span> Session label or dive number</p><p><span aria-hidden="true">□</span> Approximate start and end times</p></div><button className={styles.secondaryButton} type="button" disabled={Boolean(siteLoadError) || loadingReferences} onClick={() => setStep("create")}>Create Dive Session</button></section></div>
     <aside className={styles.infoPanel}><strong>Why add a Dive Session?</strong><p>It keeps observations, photographs and location details from the same dive together.</p></aside>
   </section>;

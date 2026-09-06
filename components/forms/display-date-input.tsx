@@ -3,7 +3,9 @@
 import { useRef } from "react";
 import {
   displayDateToInputValue,
+  formatDisplayDateInput,
   inputDateToDisplayValue,
+  todayInputDateValue,
 } from "@/lib/format/date";
 
 type DisplayDateInputProps = {
@@ -47,7 +49,7 @@ export function DisplayDateInput({
         maxLength={10}
         placeholder="dd/mm/yyyy"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(formatDisplayDateInput(event.target.value))}
         required={required}
         aria-label={`${label}, format dd/mm/yyyy`}
         aria-invalid={invalid}
@@ -75,6 +77,7 @@ export function DisplayDateInput({
           className="display-date-input__picker"
           type="date"
           value={displayDateToInputValue(value)}
+          max={todayInputDateValue()}
           onChange={(event) => onChange(inputDateToDisplayValue(event.target.value))}
           aria-hidden="true"
           tabIndex={-1}

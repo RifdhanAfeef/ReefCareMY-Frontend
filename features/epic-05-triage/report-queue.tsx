@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getCoordinatorQueue } from "@/lib/api/coordinatorApi";
-import type { CoordinatorQueueResult } from "@/lib/api/types";
+import type { CoordinatorQueueItem } from "@/lib/api/types";
 import { readStoredAuth } from "@/lib/api/token-store";
 import { userFacingError } from "@/lib/api/user-facing-error";
 import styles from "./triage.module.css";
 
 const pageSize = 20;
+const backendPageSize = 100;
 
 type LoadState = "loading" | "loaded" | "error";
 
@@ -23,8 +24,22 @@ function areaLabel(area: string | null) {
   return area ?? "Not provided";
 }
 
+async function loadAllQueueItems() {
+  const firstResult = await getCoordinatorQueue(1, backendPageSize);
+  const items = [...firstResult.items];
+  const actualBackendPageSize = firstResult.pageSize || backendPageSize;
+  const totalPages = Math.max(1, Math.ceil(firstResult.total / actualBackendPageSize));
+
+  for (let backendPage = 2; backendPage <= totalPages; backendPage += 1) {
+    const nextResult = await getCoordinatorQueue(backendPage, backendPageSize);
+    items.push(...nextResult.items);
+  }
+
+  return Array.from(new Map(items.map((item) => [item.reportReference, item])).values());
+}
+
 export function ReportQueue() {
-  const [result, setResult] = useState<CoordinatorQueueResult | null>(null);
+  const [items, setItems] = useState<CoordinatorQueueItem[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -37,10 +52,10 @@ export function ReportQueue() {
   useEffect(() => {
     let cancelled = false;
 
-    getCoordinatorQueue(page, pageSize)
-      .then((queueResult) => {
+    loadAllQueueItems()
+      .then((queueItems) => {
         if (cancelled) return;
-        setResult(queueResult);
+        setItems(queueItems);
         setState("loaded");
       })
       .catch((requestError) => {
@@ -52,46 +67,48 @@ export function ReportQueue() {
     return () => {
       cancelled = true;
     };
-  }, [page, reloadKey]);
+  }, [reloadKey]);
 
-  const items = useMemo(() => result?.items ?? [], [result]);
   const sites = useMemo(
     () => Array.from(new Set(items.map((record) => areaLabel(record.area)))).sort(),
     [items],
   );
-  const reports = useMemo(
-    () =>
-      items.filter((report) => {
-        const query = search.trim().toLowerCase();
-        const matchesSearch =
-          !query ||
-          report.reportReference.toLowerCase().includes(query) ||
-          report.threat.toLowerCase().includes(query);
-        const matchesSite = site === "all" || areaLabel(report.area) === site;
-        const isClaimed = Boolean(report.owner) || Boolean(report.claimedAt);
-        const matchesOwnership =
-          ownership === "all" ||
-          (ownership === "unclaimed" && !isClaimed) ||
-          (ownership === "mine" && report.owner?.id === currentUserId) ||
-          (ownership === "claimed" && isClaimed);
-        return matchesSearch && matchesSite && matchesOwnership;
-      }),
+  const filteredReports = useMemo(
+    () => items.filter((report) => {
+      const query = search.trim().toLowerCase();
+      const matchesSearch = !query ||
+        report.reportReference.toLowerCase().includes(query) ||
+        report.threat.toLowerCase().includes(query);
+      const matchesSite = site === "all" || areaLabel(report.area) === site;
+      const isClaimed = Boolean(report.owner) || Boolean(report.claimedAt);
+      const matchesOwnership = ownership === "all" ||
+        (ownership === "unclaimed" && !isClaimed) ||
+        (ownership === "mine" && report.owner?.id === currentUserId) ||
+        (ownership === "claimed" && isClaimed);
+      return matchesSearch && matchesSite && matchesOwnership;
+    }),
     [currentUserId, items, ownership, search, site],
   );
 
-  const total = result?.total ?? 0;
-  const actualPageSize = result?.pageSize || pageSize;
-  const totalPages = Math.max(1, Math.ceil(total / actualPageSize));
-  const firstItem = total === 0 ? 0 : (page - 1) * actualPageSize + 1;
-  const lastItem = Math.min(page * actualPageSize, total);
+  const total = filteredReports.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const firstItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastItem = Math.min(page * pageSize, total);
+  const reports = filteredReports.slice(firstItem ? firstItem - 1 : 0, lastItem);
 
-  function changePage(nextPage: number) {
-    setSearch("");
-    setSite("all");
-    setOwnership("all");
-    setState("loading");
-    setError(null);
-    setPage(nextPage);
+  function updateSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  function updateSite(value: string) {
+    setSite(value);
+    setPage(1);
+  }
+
+  function updateOwnership(value: string) {
+    setOwnership(value);
+    setPage(1);
   }
 
   function retryLoad() {
@@ -111,9 +128,7 @@ export function ReportQueue() {
       <section className={styles.card}>
         <div className={styles.queueCardHeading}>
           <h2>All submitted reports</h2>
-          {state === "loaded" && (
-            <span className={styles.pendingChip}>{total} reports</span>
-          )}
+          {state === "loaded" && <span className={styles.pendingChip}>{total} reports</span>}
         </div>
 
         {state === "loading" && (
@@ -127,39 +142,27 @@ export function ReportQueue() {
           <div className={styles.errorBox} role="alert">
             <strong>Report queue unavailable</strong>
             <p>{error}</p>
-            <button
-              className={styles.secondaryButton}
-              type="button"
-              onClick={retryLoad}
-            >
-              Try again
-            </button>
+            <button className={styles.secondaryButton} type="button" onClick={retryLoad}>Try again</button>
           </div>
         )}
 
-        {state === "loaded" && result && (
+        {state === "loaded" && (
           <>
             <div className={styles.filters}>
               <label>
-                Search this page
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Report reference or threat"
-                />
+                Search reports
+                <input value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Report reference or threat" />
               </label>
               <label>
-                Site on this page
-                <select value={site} onChange={(event) => setSite(event.target.value)}>
+                Site
+                <select value={site} onChange={(event) => updateSite(event.target.value)}>
                   <option value="all">All sites</option>
-                  {sites.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
+                  {sites.map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
               <label>
-                Ownership on this page
-                <select value={ownership} onChange={(event) => setOwnership(event.target.value)}>
+                Ownership
+                <select value={ownership} onChange={(event) => updateOwnership(event.target.value)}>
                   <option value="all">All reports</option>
                   <option value="unclaimed">Unclaimed</option>
                   <option value="claimed">Claimed</option>
@@ -171,17 +174,7 @@ export function ReportQueue() {
             {reports.length > 0 && (
               <div className={styles.tableWrap}>
                 <table>
-                  <thead>
-                    <tr>
-                      <th>Report reference</th>
-                      <th>Threat type</th>
-                      <th>General site</th>
-                      <th>Status</th>
-                      <th>Waiting</th>
-                      <th>Owner</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
+                  <thead><tr><th>Report reference</th><th>Threat type</th><th>General site</th><th>Status</th><th>Waiting</th><th>Owner</th><th>Action</th></tr></thead>
                   <tbody>
                     {reports.map((report) => (
                       <tr key={report.reportReference}>
@@ -214,37 +207,17 @@ export function ReportQueue() {
             {reports.length === 0 && (
               <div className={styles.emptyState} role="status">
                 <strong>{items.length === 0 ? "No reports were returned" : "No matching reports"}</strong>
-                <p>
-                  {items.length === 0
-                    ? "No submitted reports are available on this page."
-                    : "Change the search, site or ownership filter to view other reports on this page."}
-                </p>
+                <p>{items.length === 0 ? "No submitted reports are currently available." : "Change the search, site or ownership filter to view other reports."}</p>
               </div>
             )}
 
             {total > 0 && (
               <nav className={styles.pagination} aria-label="Report queue pages">
-                <p aria-live="polite">
-                  Showing {firstItem}–{lastItem} of {total} reports
-                </p>
+                <p aria-live="polite">Showing {firstItem}–{lastItem} of {total} reports</p>
                 <div>
-                  <button
-                    className={styles.secondaryButton}
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => changePage(page - 1)}
-                  >
-                    Previous
-                  </button>
+                  <button className={styles.secondaryButton} type="button" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Previous</button>
                   <span>Page {page} of {totalPages}</span>
-                  <button
-                    className={styles.secondaryButton}
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() => changePage(page + 1)}
-                  >
-                    Next
-                  </button>
+                  <button className={styles.secondaryButton} type="button" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>Next</button>
                 </div>
               </nav>
             )}

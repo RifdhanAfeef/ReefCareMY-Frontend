@@ -1,6 +1,7 @@
 import { readStoredAuth } from "./token-store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://reefcare-backend.vercel.app";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export class ApiError extends Error {
   status: number;
@@ -12,10 +13,12 @@ export class ApiError extends Error {
   }
 }
 
-export type ApiRequestOptions = Omit<RequestInit, "body"> & {
+export type ApiRequestOptions = Omit<RequestInit, "body" | "signal"> & {
   path: string;
   body?: BodyInit | object;
   auth?: boolean;
+  signal?: AbortSignal;
+  timeoutMs?: number;
 };
 
 function extractErrorMessage(payload: unknown, fallback: string): string {
@@ -49,6 +52,8 @@ async function executeRequest({
   headers,
   body,
   auth = true,
+  signal,
+  timeoutMs = REQUEST_TIMEOUT_MS,
   ...options
 }: ApiRequestOptions): Promise<Response> {
   const requestHeaders = new Headers(headers);
@@ -66,11 +71,33 @@ async function executeRequest({
     if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: requestHeaders,
-    body: requestBody,
-  });
+  const requestController = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => requestController.abort();
+  if (signal?.aborted) abortFromCaller();
+  else signal?.addEventListener("abort", abortFromCaller, { once: true });
+  const timeoutId = globalThis.setTimeout(() => {
+    timedOut = true;
+    requestController.abort();
+  }, timeoutMs);
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: requestHeaders,
+      body: requestBody,
+      signal: requestController.signal,
+    });
+  } catch (error) {
+    if (timedOut) {
+      throw new ApiError("The request took too long. Please check your connection and try again.", 408);
+    }
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", abortFromCaller);
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);

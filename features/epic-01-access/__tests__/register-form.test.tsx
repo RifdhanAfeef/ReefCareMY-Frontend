@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "../auth-context";
 import { RegisterForm } from "../register-form";
 import * as authApi from "@/lib/api/authApi";
+import { ApiError } from "@/lib/api/client";
 
 vi.mock("@/lib/api/authApi", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/authApi")>();
@@ -64,7 +65,7 @@ async function fillForm(
 }
 
 describe("Register — submission is disabled for invalid input", () => {
-  it("disables the submit button while the password is shorter than 12 characters", async () => {
+  it("disables the submit button while the password is shorter than 6 characters", async () => {
     renderForm();
     const user = userEvent.setup();
     await fillForm(user, { password: "short" });
@@ -102,6 +103,33 @@ describe("Register — submission is disabled for invalid input", () => {
     await fillForm(user);
 
     expect(screen.getByRole("button", { name: /create account/i })).toBeEnabled();
+  });
+
+  it("shows live accessible requirements without displaying a maximum", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    const password = screen.getByLabelText("Password");
+
+    expect(screen.getByText("Required: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByText("Required: At least 4 different characters")).toBeInTheDocument();
+    expect(screen.queryByText(/128|maximum/i)).not.toBeInTheDocument();
+
+    await user.type(password, "abcdef");
+
+    expect(screen.getByText("Met: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByText("Met: At least 4 different characters")).toBeInTheDocument();
+  });
+
+  it("allows the password to be shown and hidden", async () => {
+    renderForm();
+    const user = userEvent.setup();
+    const password = screen.getByLabelText("Password");
+
+    expect(password).toHaveAttribute("type", "password");
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(password).toHaveAttribute("type", "text");
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(password).toHaveAttribute("type", "password");
   });
 });
 
@@ -184,6 +212,19 @@ describe("Register — success registers the account, then signs the observer in
 });
 
 describe("Register — failed submission", () => {
+  it("explains when the deployed backend still enforces the obsolete 12-character rule", async () => {
+    mockedRegister.mockRejectedValue(new ApiError("String should have at least 12 characters", 422));
+
+    renderForm();
+    const user = userEvent.setup();
+    await fillForm(user, { password: "reef12" });
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "outdated 12-character password rule",
+    );
+  });
+
   it("shows the backend's error and does not navigate away", async () => {
     mockedRegister.mockRejectedValue(new Error("An account with that email already exists"));
 

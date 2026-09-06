@@ -58,6 +58,7 @@ describe("coordinator API contract", () => {
     ]);
     expect(mockedApiBlobRequest).toHaveBeenCalledWith({
       path: "/api/v1/coordinator/reports/RC-0241/evidence/13",
+      timeoutMs: 60_000,
     });
   });
 

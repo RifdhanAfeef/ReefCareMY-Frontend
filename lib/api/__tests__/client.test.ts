@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiBlobRequest, apiRequest } from "../client";
 import { writeStoredAuth } from "../token-store";
 
@@ -12,6 +12,10 @@ function jsonResponse(body: unknown, status = 200) {
 beforeEach(() => {
   window.localStorage.clear();
   vi.stubGlobal("fetch", vi.fn());
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("apiRequest — request construction", () => {
@@ -118,6 +122,22 @@ describe("apiRequest — error message extraction", () => {
     await expect(apiRequest({ path: "/api/v1/reports/mine" })).rejects.toThrow(
       "Request failed with status 500.",
     );
+  });
+});
+
+describe("apiRequest — slow connections", () => {
+  it("stops an unresponsive request and provides a recoverable message", async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetch).mockImplementation((_input, init) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    }));
+
+    const result = expect(apiRequest({ path: "/api/v1/reports/mine" })).rejects.toThrow(
+      "The request took too long. Please check your connection and try again.",
+    );
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    await result;
   });
 });
 

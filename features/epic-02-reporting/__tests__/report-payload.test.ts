@@ -42,4 +42,36 @@ describe("report submission boundary", () => {
     });
     expect(result.observedAt).toBe(new Date("2026-08-27T09:10:00").toISOString());
   });
+
+  it.each([
+    ["ghost_gear", 41],
+    ["coral_bleaching", 42],
+    ["marine_debris", 43],
+    ["physical_reef_damage", 44],
+    ["unsure", 45],
+  ] as const)("preserves the backend category id for %s", (threatCategoryCode, threatCategoryId) => {
+    const result = buildReportSubmissionPayload(
+      {
+        ...initialReportDraft,
+        threatCategoryCode,
+        threatCategoryId,
+        observationDate: "05/09/2026",
+        observationTime: "10:15",
+        description: "Observed reef condition.",
+      },
+      {
+        ...initialLocationDraft,
+        confidence: "dive_site_only",
+        selectedSessionId: "session-1",
+        sessions: [{
+          id: "session-1",
+          backendId: 91,
+          namedDiveSiteId: 7,
+          site: "Shark Point — Perhentian Islands",
+        }],
+      },
+    );
+
+    expect(result.threatCategoryId).toBe(threatCategoryId);
+  });
 });

@@ -19,11 +19,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     : user?.role === "system_administrator"
       ? administratorNavigation
       : observerNavigation;
+  const actions = status === "loading"
+    ? []
+    : signedIn
+      ? signedInActions
+      : publicActions;
 
   return (
     <AppShell
       navigation={signedIn ? signedInNavigation : publicNavigation}
-      actions={status === "loading" ? [] : signedIn ? signedInActions : publicActions}
+      actions={actions}
     >
       {children}
     </AppShell>

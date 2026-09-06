@@ -17,8 +17,9 @@ function resultOf(
   items: CoordinatorQueueResult["items"],
   page = 1,
   total = items.length,
+  pageSize = 20,
 ): CoordinatorQueueResult {
-  return { items, page, pageSize: 20, total };
+  return { items, page, pageSize, total };
 }
 
 const report = {
@@ -42,13 +43,17 @@ describe("Coordinator report queue", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Ghost fishing gear")).toBeInTheDocument();
     expect(screen.getAllByText("Tioman Island")).toHaveLength(2);
-    expect(mockedGetCoordinatorQueue).toHaveBeenCalledWith(1, 20);
+    expect(mockedGetCoordinatorQueue).toHaveBeenCalledWith(1, 100);
   });
 
-  it("loads the next backend page when the coordinator selects Next", async () => {
+  it("loads all backend pages, then paginates the complete queue locally", async () => {
     const user = userEvent.setup();
+    const firstPage = Array.from({ length: 20 }, (_, index) => ({
+      ...report,
+      reportReference: `RC-${String(index + 1001).padStart(4, "0")}`,
+    }));
     mockedGetCoordinatorQueue
-      .mockResolvedValueOnce(resultOf([report], 1, 21))
+      .mockResolvedValueOnce(resultOf(firstPage, 1, 21))
       .mockResolvedValueOnce(
         resultOf(
           [{ ...report, reportReference: "RC-1021", area: "Redang Island" }],
@@ -62,12 +67,13 @@ describe("Coordinator report queue", () => {
       await screen.findByRole("link", { name: "Review and claim RC-1001" }),
     ).toBeInTheDocument();
 
+    expect(mockedGetCoordinatorQueue).toHaveBeenNthCalledWith(2, 2, 100);
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(
       await screen.findByRole("link", { name: "Review and claim RC-1021" }),
     ).toBeInTheDocument();
-    expect(mockedGetCoordinatorQueue).toHaveBeenLastCalledWith(2, 20);
+    expect(mockedGetCoordinatorQueue).toHaveBeenCalledTimes(2);
   });
 
   it("shows the backend error and allows the request to be retried", async () => {
@@ -118,9 +124,38 @@ describe("Coordinator report queue", () => {
     expect(screen.getByText("Another Coordinator")).toBeInTheDocument();
     expect(screen.getByText("Under Review")).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText("Ownership on this page"), "mine");
+    await user.selectOptions(screen.getByLabelText("Ownership"), "mine");
     expect(screen.getByRole("link", { name: "View claimed case RC-1001" })).toBeInTheDocument();
     expect(screen.queryByText("Another Coordinator")).not.toBeInTheDocument();
+  });
+
+  it("recalculates counts and page controls for the active ownership filter", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("reefcare.auth", JSON.stringify({
+      accessToken: "coordinator-token",
+      user: { id: 8, displayName: "Current Coordinator", role: "case_coordinator" },
+    }));
+    const allReports = Array.from({ length: 24 }, (_, index) => ({
+      ...report,
+      reportReference: `RC-${String(index + 1).padStart(4, "0")}`,
+      ...(index < 2 ? {
+        statusCode: "claimed" as const,
+        statusLabel: "Claimed",
+        owner: { id: 8, displayName: "Current Coordinator" },
+        claimedAt: "2026-09-04T03:00:00Z",
+      } : {}),
+    }));
+    mockedGetCoordinatorQueue.mockResolvedValue(resultOf(allReports, 1, 24, 100));
+
+    render(<ReportQueue />);
+    expect(await screen.findByText("Showing 1–20 of 24 reports")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Ownership"), "mine");
+
+    expect(screen.getByText("2 reports")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1–2 of 2 reports")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    expect(screen.getByText("Page 1 of 1")).toBeInTheDocument();
   });
 
   it("does not expose API-contract language when records are returned", async () => {

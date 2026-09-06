@@ -124,4 +124,23 @@ describe("Login — success stores the session and navigates onward", () => {
     expect(stored?.user?.displayName).toBe("observer");
     expect(stored?.accessToken).toBe("tok-abc");
   });
+
+  it("takes a coordinator directly to the report queue", async () => {
+    mockedLogin.mockResolvedValue({
+      accessToken: "coordinator-token",
+      tokenType: "bearer",
+      expiresIn: 3600,
+      user: { id: 8, displayName: "Coordinator One", role: "case_coordinator" },
+    });
+
+    render(
+      <AuthProvider>
+        <LoginForm />
+      </AuthProvider>,
+    );
+
+    await fillAndSubmit("coordinator@example.org", "secure-password");
+
+    expect(push).toHaveBeenCalledWith("/coordinator/report-queue");
+  });
 });

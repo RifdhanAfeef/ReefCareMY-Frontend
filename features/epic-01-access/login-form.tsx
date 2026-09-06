@@ -22,8 +22,13 @@ export function LoginForm() {
     setError(null);
 
     try {
-      await login(email, password);
-      router.push("/");
+      const signedInUser = await login(email, password);
+      const destination = signedInUser.role === "case_coordinator"
+        ? "/coordinator/report-queue"
+        : signedInUser.role === "system_administrator"
+          ? "/admin/users"
+          : "/";
+      router.push(destination);
     } catch (err) {
       setError(userFacingError(err, "Email or password is incorrect."));
     } finally {

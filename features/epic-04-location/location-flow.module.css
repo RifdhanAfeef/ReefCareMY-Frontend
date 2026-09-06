@@ -4,6 +4,14 @@
 .heading h1 { margin: 0; font-size: clamp(34px, 3vw, 44px); line-height: 1.12; }
 .heading > p:last-child, .supporting { color: var(--color-muted); }
 .heading > p:last-child { margin: 12px 0 0; font-size: 18px; }
+.progress { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 30px 0 0; padding: 0; list-style: none; }
+.progress li { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 10px 12px; color: var(--color-muted); background: #edf4f3; border: 1px solid var(--color-border); border-radius: 12px; font-size: 13px; }
+.progress li > span { width: 25px; height: 25px; flex: 0 0 25px; display: grid; place-items: center; background: #fff; border: 1px solid var(--color-border); border-radius: 50%; }
+.progress li > strong { min-width: 0; overflow-wrap: anywhere; }
+.progress li[data-status="complete"] { color: var(--color-primary-hover); background: var(--color-info); }
+.progress li[data-status="complete"] > span { color: #fff; background: var(--color-primary); border-color: var(--color-primary); }
+.progress li[data-status="current"] { color: var(--color-ink); background: #fff; border: 2px solid var(--color-primary); }
+.progress li[data-status="current"] > span { color: #fff; background: var(--color-primary); border-color: var(--color-primary); }
 .choiceGrid, .privacyGrid, .savedGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 50px; }
 .locationChoices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .formLayout { display: grid; grid-template-columns: minmax(0, 900px); justify-content: center; margin-top: 44px; }
@@ -38,6 +46,8 @@
 .field input, .field select, .field textarea { width: 100%; min-height: 54px; padding: 12px 16px; color: var(--color-ink); background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-field); font-weight: 400; }
 .field textarea { min-height: 100px; resize: vertical; }
 .field > input[aria-invalid="true"], .field > select[aria-invalid="true"] { border: 2px solid var(--color-danger); }
+.readOnlyLabel { display: grid; gap: 8px; color: var(--color-ink); font-size: 15px; font-weight: 700; }
+.readOnlyValue { margin: 0; min-height: 54px; padding: 14px 16px; color: var(--color-ink); background: var(--color-surface-soft); border: 1px solid var(--color-border); border-radius: var(--radius-field); font-weight: 500; }
 .timeFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .fullField { grid-column: 1 / -1; }
 .sidePanel { background: var(--color-info); }
@@ -47,6 +57,11 @@
 .errorText { margin: 14px 0 0; color: var(--color-danger); font-size: 14px; font-weight: 700; }
 .inlineError { margin-top: 16px; padding: 14px 16px; color: var(--color-danger); background: #fff3f1; border-radius: 12px; }
 .inlineError p { margin: 0 0 8px; }
+.stateCard { max-width: 760px; gap: 18px; margin-top: 40px; }
+.stateCard > p { margin: 0; }
+.emptyState { max-width: 760px; gap: 26px; margin-top: 40px; }
+.emptyState h2 { margin-bottom: 8px; }
+.emptyState .primaryButton { margin-top: 0; }
 .textRetry { padding: 0; color: var(--color-primary); background: transparent; border: 0; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }
 .locationChoices .textRetry { margin-top: 18px; align-self: flex-start; }
 .coordinateFields { display: grid; gap: 18px; margin: 24px 0; }
@@ -78,4 +93,4 @@
 .purpleBox { margin-top: 36px; padding: 20px; color: #6e55a3; background: #f1ecfa; border-radius: 14px; }
 @media (max-width: 1100px) { .locationChoices { grid-template-columns: 1fr; } }
 @media (max-width: 1000px) { .choiceGrid, .privacyGrid, .formLayout, .confirmGrid, .savedGrid { grid-template-columns: 1fr; } .savedContent { grid-template-columns: 1fr; } }
-@media (max-width: 650px) { .page { width: min(calc(100% - 32px), var(--content-width)); padding: 32px 0 48px; } .choiceGrid, .privacyGrid, .savedGrid, .formLayout, .confirmGrid { gap: 22px; margin-top: 30px; } .card, .sidePanel { padding: 24px; } .formGrid, .timeFields { grid-template-columns: 1fr; } .fullField { grid-column: auto; } .map { min-height: 220px; } .actions, .splitActions { align-items: stretch; flex-direction: column-reverse; } .actions > *, .splitActions > *, .primaryButton, .secondaryButton { width: 100%; align-self: stretch; } .accessList div { grid-template-columns: 1fr; gap: 4px; } }
+@media (max-width: 650px) { .page { width: min(calc(100% - 32px), var(--content-width)); padding: 32px 0 48px; } .progress { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 24px; } .progress li { padding: 9px 10px; } .choiceGrid, .privacyGrid, .savedGrid, .formLayout, .confirmGrid { gap: 22px; margin-top: 30px; } .card, .sidePanel { padding: 24px; } .formGrid, .timeFields { grid-template-columns: 1fr; } .fullField { grid-column: auto; } .map, .mapCanvas { min-height: 220px; } .mapInstruction { max-width: calc(100% - 24px); } .map :global(.leaflet-control-attribution) { max-width: calc(100% - 56px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .actions, .splitActions { align-items: stretch; flex-direction: column-reverse; } .actions > *, .splitActions > *, .primaryButton, .secondaryButton { width: 100%; align-self: stretch; } .accessList div { grid-template-columns: 1fr; gap: 4px; } }

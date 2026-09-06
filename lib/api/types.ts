@@ -214,12 +214,19 @@ export type ClaimedCase = {
   claimedAt: string;
 };
 
+export type CoordinatorDecisionSummary = {
+  responseType: ResponseType;
+  notes?: string | null;
+  referredTo?: string | null;
+  decidedAt?: string | null;
+};
+
 export type CoordinatorCase = {
   reportReference: string;
   observerId: number;
   threat: string;
   description: string;
-  observedAt?: string;
+  observedAt: string | null;
   estimatedDepthMetres: number | null;
   area: string | null;
   preciseLocation: {
@@ -232,6 +239,7 @@ export type CoordinatorCase = {
   submittedAt: string;
   owner: CaseOwner;
   evidence: CoordinatorEvidence[];
+  latestDecision?: CoordinatorDecisionSummary | null;
 };
 
 export type CoordinatorEvidence = {

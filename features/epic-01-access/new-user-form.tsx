@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MAX_DISPLAY_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_DISTINCT_PASSWORD_CHARACTERS, MIN_PASSWORD_LENGTH, passwordMeetsRequirements } from "@/lib/api/authApi";
+import { PasswordInput } from "@/components/forms/password-requirements";
+import { MAX_DISPLAY_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, passwordMeetsRequirements } from "@/lib/api/authApi";
 import { userRoleOptions } from "./role-catalog";
 import { readCreatedUsers, saveCreatedUser } from "./admin-user-storage";
 import type { UserAccount, UserRoleCode } from "./types";
@@ -124,24 +125,14 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
           <span className={styles.fieldHelp}>The selected role controls which workspace the user can access.</span>
         </div>
 
-        <div className={styles.field}>
-          <label htmlFor="new-user-password">Temporary password</label>
-          <input
-            className={styles.input}
-            id="new-user-password"
-            type="password"
-            autoComplete="new-password"
-            minLength={MIN_PASSWORD_LENGTH}
-            maxLength={MAX_PASSWORD_LENGTH}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-describedby="new-user-password-help"
-            required
-          />
-          <span className={styles.fieldHelp} id="new-user-password-help">
-            {MIN_PASSWORD_LENGTH}–{MAX_PASSWORD_LENGTH} characters with at least {MIN_DISTINCT_PASSWORD_CHARACTERS} different characters
-          </span>
-        </div>
+        <PasswordInput
+          className={styles.field}
+          inputClassName={styles.input}
+          id="new-user-password"
+          label="Temporary password"
+          value={password}
+          onChange={setPassword}
+        />
 
         <div className={styles.field}>
           <label htmlFor="new-user-password-confirmation">Confirm temporary password</label>
