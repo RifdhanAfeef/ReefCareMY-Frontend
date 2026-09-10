@@ -38,8 +38,7 @@ export function AccessRequestReview({ request }: { request: AccessRequest }) {
             : `Coordinator access was not approved`}
         </h2>
         <p className={styles.sectionDescription}>
-          This is a frontend preview only. No backend role or account permission
-          was changed.
+          This is a preview only. The account’s access has not been changed.
         </p>
 
         <div className={styles.traceRecord}>
@@ -67,9 +66,9 @@ export function AccessRequestReview({ request }: { request: AccessRequest }) {
     <div className={styles.reviewGrid}>
       <section className={styles.detailCard} aria-labelledby="request-title">
         <div className={styles.notice} role="status">
-          <strong>Administrator API not available</strong>
-          Approve and reject actions demonstrate the intended workflow but do not
-          update a backend account.
+          <strong>Access changes are not available yet</strong>
+          You can review this request, but changes cannot be applied to the account
+          from this screen.
         </div>
         <h2 className={styles.sectionHeading} id="request-title">
           Access request

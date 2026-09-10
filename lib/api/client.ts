@@ -102,7 +102,7 @@ async function executeRequest({
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     throw new ApiError(
-      extractErrorMessage(payload, `Request failed with status ${response.status}.`),
+      extractErrorMessage(payload, "ReefCare MY could not complete the request. Please try again."),
       response.status,
     );
   }

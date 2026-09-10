@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ApiError } from "@/lib/api/client";
 import { userFacingError } from "@/lib/api/user-facing-error";
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
@@ -30,7 +31,11 @@ export function LoginForm() {
           : "/";
       router.push(destination);
     } catch (err) {
-      setError(userFacingError(err, "Email or password is incorrect."));
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? "Email or password is incorrect."
+          : userFacingError(err, "We couldn’t log you in. Please try again."),
+      );
     } finally {
       setSubmitting(false);
     }

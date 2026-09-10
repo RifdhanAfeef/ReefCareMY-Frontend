@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { ReportDetail } from "../report-detail";
 import * as reportsApi from "@/lib/api/reportsApi";
 import type { ReportDetail as ReportDetailData } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
 
 vi.mock("@/lib/api/reportsApi");
 const mockedGetReportDetail = vi.mocked(reportsApi.getReportDetail);
@@ -40,6 +41,17 @@ describe("Report detail — shows what was observed", () => {
     expect(await screen.findByText("Ghost fishing gear")).toBeInTheDocument();
     expect(screen.getByText("Large fishing net tangled around coral")).toBeInTheDocument();
     expect(screen.getByText("Tiger Reef")).toBeInTheDocument();
+  });
+
+  it("does not display technical failure details", async () => {
+    mockedGetReportDetail.mockRejectedValue(new ApiError("Database query failed", 500));
+
+    render(<ReportDetail reportReference="RC-0241" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "ReefCare MY is temporarily unavailable. Please try again shortly.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/database|backend|API|500/i);
   });
 });
 

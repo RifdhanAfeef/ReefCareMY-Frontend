@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getReportTimeline } from "@/lib/api/reportsApi";
 import type { ReportTimelineEvent } from "@/lib/api/types";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import styles from "./report-timeline.module.css";
 
 type LoadState = "loading" | "loaded" | "error";
@@ -24,7 +25,7 @@ export function ReportTimeline({ reportReference }: { reportReference: string })
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : null);
+          setError(userFacingError(err, "We couldn’t load this report’s status history right now."));
           setState("error");
         }
       });
@@ -40,7 +41,7 @@ export function ReportTimeline({ reportReference }: { reportReference: string })
 
   if (state === "error") {
     return (
-      <p role="alert">{error ?? "We couldn't load this report's status history."}</p>
+      <p role="alert">{error ?? "We couldn’t load this report’s status history right now."}</p>
     );
   }
 

@@ -15,7 +15,7 @@ type RawThreatCategory = Partial<ThreatCategoryReference> & {
 
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`The backend returned an invalid ${field} value.`);
+    throw new Error(`ReefCare MY returned an invalid ${field} value. Please try again.`);
   }
   return value;
 }
@@ -23,7 +23,7 @@ function requiredString(value: unknown, field: string): string {
 function normaliseThreatCategory(item: RawThreatCategory): ThreatCategoryReference {
   const threatCategoryId = item.threatCategoryId ?? item.threat_category_id;
   if (!Number.isInteger(threatCategoryId) || Number(threatCategoryId) <= 0) {
-    throw new Error("The backend returned an invalid threat category identifier.");
+    throw new Error("ReefCare MY returned an invalid threat category. Please try again.");
   }
 
   return {

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "../auth-context";
 import { LoginForm } from "../login-form";
 import * as authApi from "@/lib/api/authApi";
+import { ApiError } from "@/lib/api/client";
 
 vi.mock("@/lib/api/authApi");
 const mockedLogin = vi.mocked(authApi.login);
@@ -50,7 +51,7 @@ async function fillAndSubmit(email: string, password: string) {
 
 describe("Login — generic credential error", () => {
   it("shows a user-safe credential message", async () => {
-    mockedLogin.mockRejectedValue(new Error("Invalid credentials"));
+    mockedLogin.mockRejectedValue(new ApiError("Invalid credentials", 401));
 
     render(
       <AuthProvider>
@@ -61,6 +62,7 @@ describe("Login — generic credential error", () => {
     await fillAndSubmit("observer@example.org", "wrong-password");
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/invalid credentials|backend|API|401/i);
   });
 });
 

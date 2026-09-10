@@ -104,7 +104,7 @@ describe("apiRequest — error message extraction", () => {
       jsonResponse(
         {
           detail: [
-            { loc: ["body", "password"], msg: "String should have at least 6 characters" },
+            { loc: ["body", "password"], msg: "String should have at least 12 characters" },
           ],
         },
         422,
@@ -112,7 +112,7 @@ describe("apiRequest — error message extraction", () => {
     );
 
     await expect(apiRequest({ path: "/api/v1/auth/register" })).rejects.toThrow(
-      "String should have at least 6 characters",
+      "String should have at least 12 characters",
     );
   });
 
@@ -120,7 +120,7 @@ describe("apiRequest — error message extraction", () => {
     vi.mocked(fetch).mockResolvedValue(new Response("not json", { status: 500 }));
 
     await expect(apiRequest({ path: "/api/v1/reports/mine" })).rejects.toThrow(
-      "Request failed with status 500.",
+      "ReefCare MY could not complete the request. Please try again.",
     );
   });
 });

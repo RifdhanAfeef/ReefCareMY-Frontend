@@ -65,7 +65,7 @@ async function fillForm(
 }
 
 describe("Register — submission is disabled for invalid input", () => {
-  it("disables the submit button while the password is shorter than 6 characters", async () => {
+  it("disables the submit button while the password is shorter than 12 characters", async () => {
     renderForm();
     const user = userEvent.setup();
     await fillForm(user, { password: "short" });
@@ -110,13 +110,13 @@ describe("Register — submission is disabled for invalid input", () => {
     const user = userEvent.setup();
     const password = screen.getByLabelText("Password");
 
-    expect(screen.getByText("Required: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByText("Required: At least 12 characters")).toBeInTheDocument();
     expect(screen.getByText("Required: At least 4 different characters")).toBeInTheDocument();
     expect(screen.queryByText(/128|maximum/i)).not.toBeInTheDocument();
 
-    await user.type(password, "abcdef");
+    await user.type(password, "reefcare1234");
 
-    expect(screen.getByText("Met: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByText("Met: At least 12 characters")).toBeInTheDocument();
     expect(screen.getByText("Met: At least 4 different characters")).toBeInTheDocument();
   });
 
@@ -212,21 +212,22 @@ describe("Register — success registers the account, then signs the observer in
 });
 
 describe("Register — failed submission", () => {
-  it("explains when the deployed backend still enforces the obsolete 12-character rule", async () => {
+  it("replaces validation details with a user-facing correction message", async () => {
     mockedRegister.mockRejectedValue(new ApiError("String should have at least 12 characters", 422));
 
     renderForm();
     const user = userEvent.setup();
-    await fillForm(user, { password: "reef12" });
+    await fillForm(user);
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "outdated 12-character password rule",
+      "Some information needs correcting before you can continue.",
     );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/backend|API|String should|422/i);
   });
 
-  it("shows the backend's error and does not navigate away", async () => {
-    mockedRegister.mockRejectedValue(new Error("An account with that email already exists"));
+  it("explains a duplicate email without exposing the response detail", async () => {
+    mockedRegister.mockRejectedValue(new ApiError("Database unique constraint failed", 409));
 
     renderForm();
     const user = userEvent.setup();
@@ -235,8 +236,9 @@ describe("Register — failed submission", () => {
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "An account with that email already exists",
+      "An account with this email already exists. Try logging in instead.",
     );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/database|constraint|backend|API/i);
     expect(push).not.toHaveBeenCalled();
     expect(mockedLogin).not.toHaveBeenCalled();
   });

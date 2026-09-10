@@ -10,6 +10,7 @@ import {
   register,
 } from "@/lib/api/authApi";
 import { ApiError } from "@/lib/api/client";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import { useAuth } from "./auth-context";
 import styles from "./auth-form.module.css";
 
@@ -44,12 +45,14 @@ export function RegisterForm() {
       await login(email, password);
       router.push("/my-reports");
     } catch (err) {
-      const serverStillRequiresTwelveCharacters = err instanceof ApiError &&
-        err.status === 422 &&
-        /at least 12 characters/i.test(err.message);
-      setError(serverStillRequiresTwelveCharacters
-        ? "The registration service still has an outdated 12-character password rule. Use 12 or more characters for now, or ask the backend team to update its minimum to 6."
-        : err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? "An account with this email already exists. Try logging in instead."
+          : userFacingError(
+              err,
+              "We couldn’t create your account. Please check your details and try again.",
+            ),
+      );
     } finally {
       setSubmitting(false);
     }

@@ -41,7 +41,7 @@ export function ReportQueue({
       }),
     );
     setMessage(
-      `${reportId} is now assigned to ${currentCoordinator}. A backend ownership check will replace this temporary frontend action.`,
+      `${reportId} is shown as assigned to ${currentCoordinator} in this preview. The live case record has not been changed.`,
     );
   }
 

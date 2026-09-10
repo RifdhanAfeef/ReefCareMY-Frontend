@@ -99,8 +99,8 @@ export function UnclaimedCase({ record }: { record: CaseRecord }) {
       </p>
       <div className={styles.warningNotice}>
         <strong>Protected details are not shown yet</strong>
-        A successful backend ownership check must occur before the exact location
-        or decision controls become available.
+        Your case ownership must be verified before the exact location or decision
+        controls become available.
       </div>
       <Link className={styles.primaryButton} href="/coordinator/report-queue">
         Return to report intake

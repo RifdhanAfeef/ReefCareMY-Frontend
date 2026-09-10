@@ -100,6 +100,7 @@ export function LocationFlow() {
   const [manualLongitude, setManualLongitude] = useState(pin?.longitude?.toFixed(6) ?? "");
   const [coordinateError, setCoordinateError] = useState("");
   const initiallySelectedSessionId = useRef(selectedSessionId);
+  const lastStepNavigationUsedKeyboard = useRef(false);
   const session = useMemo(() => sessions.find((item) => item.id === selectedSessionId) ?? sessions[0], [selectedSessionId, sessions]);
   const sessionTitle = session ? `${session.site}${session.label ? ` - ${session.label}` : ""}` : "No Dive Session selected";
   const confidenceLabel = confidenceOptions.find((item) => item.value === confidence)?.label ?? "Not provided";
@@ -151,8 +152,29 @@ export function LocationFlow() {
   }, [referenceReloadKey, updateLocationDraft]);
 
   useEffect(() => {
+    const rememberKeyboardNavigation = (event: KeyboardEvent) => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      lastStepNavigationUsedKeyboard.current = true;
+    };
+    const rememberPointerNavigation = () => {
+      lastStepNavigationUsedKeyboard.current = false;
+    };
+
+    document.addEventListener("keydown", rememberKeyboardNavigation, true);
+    document.addEventListener("pointerdown", rememberPointerNavigation, true);
+    return () => {
+      document.removeEventListener("keydown", rememberKeyboardNavigation, true);
+      document.removeEventListener("pointerdown", rememberPointerNavigation, true);
+    };
+  }, []);
+
+  useEffect(() => {
     const heading = document.querySelector<HTMLElement>("[data-location-flow-heading]");
-    heading?.focus({ preventScroll: true });
+    if (heading) {
+      heading.style.outline = lastStepNavigationUsedKeyboard.current ? "" : "none";
+      heading.style.outlineOffset = lastStepNavigationUsedKeyboard.current ? "" : "0";
+      heading.focus({ preventScroll: true });
+    }
     const reducedMotion = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
   }, [step]);

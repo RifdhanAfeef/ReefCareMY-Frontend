@@ -160,7 +160,7 @@ describe("Coordinator case workflow", () => {
     render(<CoordinatorCaseRoute reportReference={report.reportReference} />);
 
     expect(await screen.findByText("Observation date could not be loaded")).toBeInTheDocument();
-    expect(screen.getByText(/case response did not include/)).toBeInTheDocument();
+    expect(screen.getByText(/observation date is temporarily unavailable/i)).toBeInTheDocument();
   });
 
   it("records a Not Substantiated evidence outcome through the backend", async () => {

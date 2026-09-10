@@ -71,9 +71,9 @@ export function NewUserForm({ existingUsers }: NewUserFormProps) {
       </div>
 
       <section className={styles.notice} role="status">
-        <strong>Frontend preview only</strong>
-        The backend has no administrator account-creation endpoint yet. Submitting
-        this form adds a password-free preview record to this browser only.
+        <strong>Account creation is not available yet</strong>
+        You can review and complete this form, but submitting it creates a preview
+        record on this device only. No account will be created.
       </section>
 
       <div className={styles.formGrid}>

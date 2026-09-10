@@ -375,7 +375,7 @@ function CaseWorkflow({ report, refreshCase, claimConfirmation }: { report: Coor
     setResponseError("");
     if (responseType === "refer_or_share") { setReviewOutcome("referral"); setStage("referral"); return; }
     if (currentStatus !== "evidence_accepted") {
-      setResponseError("A response can only be recorded after the backend accepts the evidence assessment.");
+      setResponseError("A response can only be recorded after the evidence assessment has been accepted. Refresh the case and try again.");
       return;
     }
     setPendingAction("decision");
@@ -458,7 +458,7 @@ function CaseWorkflow({ report, refreshCase, claimConfirmation }: { report: Coor
     <div className={styles.reviewGrid}><section className={styles.card}>
       <h2>Submitted evidence</h2><p className={styles.muted}>Evidence provided by the observer with this report.</p><EvidenceRecords reportReference={report.reportReference} evidence={report.evidence} />
       <dl className={styles.detailList}><div><dt>Threat type</dt><dd>{report.threat}</dd></div><div><dt>Observed</dt><dd>{observationDateMissing ? "Unavailable" : displayDateTime(report.observedAt)}</dd></div><div><dt>Estimated depth</dt><dd>{report.estimatedDepthMetres == null ? "Not provided" : `${report.estimatedDepthMetres} m`}</dd></div><div><dt>Description</dt><dd>{report.description}</dd></div><div><dt>General area</dt><dd>{report.area ?? "Not provided"}</dd></div><div><dt>Submitted</dt><dd>{displayDateTime(report.submittedAt)}</dd></div></dl>
-      {observationDateMissing && <div className={styles.warningBox} role="status"><strong>Observation date could not be loaded</strong><p>The coordinator case response did not include the report&apos;s observedAt value. Refresh the case; if it remains unavailable, the backend case projection needs correcting.</p></div>}
+      {observationDateMissing && <div className={styles.warningBox} role="status"><strong>Observation date could not be loaded</strong><p>The observation date is temporarily unavailable. Refresh the case and try again. If it remains unavailable, report the problem to your system administrator.</p></div>}
       <div className={styles.protectedBox}><strong>Authorised exact location</strong><p>{exactLocation}</p>{uncertainty && <small>{uncertainty}</small>}</div>
     </section><aside className={styles.sidePanel}><h2>Case control</h2><dl className={styles.detailList}><div><dt>Active owner</dt><dd>{report.owner.displayName}</dd></div><div><dt>Status</dt><dd>{report.statusLabel}</dd></div></dl><div className={styles.infoBox}><strong>Review type</strong><p>Your assessment is a desk review, not an on-site confirmation.</p></div>{assessmentError && <p className={styles.errorText} role="alert">{assessmentError}</p>}<button className={styles.primaryButton} type="button" onClick={beginAssessment} disabled={pendingAction !== null || !["claimed", "under_review", "evidence_accepted"].includes(currentStatus)}>{pendingAction === "start-review" ? "Starting review…" : currentStatus === "evidence_accepted" ? "Continue to response" : "Start evidence assessment"}</button><button className={styles.secondaryButton} type="button" onClick={beginInfoRequest} disabled={pendingAction !== null || currentStatus !== "under_review"}>Request more information</button>{currentStatus === "claimed" && <p className={styles.muted}>Start the evidence assessment before requesting more information.</p>}</aside></div>
   </section>;

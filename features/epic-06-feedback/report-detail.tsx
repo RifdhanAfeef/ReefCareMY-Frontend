@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getReportDetail } from "@/lib/api/reportsApi";
 import type { ReportDetail as ReportDetailData } from "@/lib/api/types";
+import { userFacingError } from "@/lib/api/user-facing-error";
 import styles from "./report-detail.module.css";
 
 type LoadState = "loading" | "loaded" | "error";
@@ -24,7 +25,7 @@ export function ReportDetail({ reportReference }: { reportReference: string }) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : null);
+          setError(userFacingError(err, "We couldn’t load this report right now."));
           setState("error");
         }
       });
@@ -39,7 +40,7 @@ export function ReportDetail({ reportReference }: { reportReference: string }) {
   }
 
   if (state === "error" || !report) {
-    return <p role="alert">{error ?? "We couldn't load this report."}</p>;
+    return <p role="alert">{error ?? "We couldn’t load this report right now."}</p>;
   }
 
   return (

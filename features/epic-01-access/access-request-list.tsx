@@ -8,9 +8,9 @@ export function AccessRequestList({ requests }: { requests: AccessRequest[] }) {
   return (
     <div className={styles.stack}>
       <section className={styles.notice}>
-        <strong>Administrator API not available</strong>
-        These access requests are prototype records. Reviews cannot be saved to the
-        backend until list, approve and reject endpoints are defined.
+        <strong>Access-request management is not available yet</strong>
+        These are preview records. Requests cannot be loaded, approved or rejected
+        from this screen yet.
       </section>
 
       <section className={styles.tableCard} aria-label="Coordinator access requests">

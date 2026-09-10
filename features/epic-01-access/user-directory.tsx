@@ -61,16 +61,16 @@ export function UserDirectory({ initialUsers }: UserDirectoryProps) {
   function saveChanges() {
     if (!selectedUser) return;
     setSavedMessage(
-      `Access settings saved for ${selectedUser.name}. This temporary frontend state will be replaced by the administrator API.`,
+      `Access settings for ${selectedUser.name} were saved for this preview only. No account permissions were changed.`,
     );
   }
 
   return (
     <div className={styles.stack}>
       <section className={styles.notice} role="status">
-        <strong>Administrator API not available</strong>
-        This directory contains prototype records. Search and edit controls are a
-        frontend preview and do not change backend accounts.
+        <strong>Account changes are not available yet</strong>
+        You can review users and access settings, but changes made here are saved
+        only for this preview and do not alter real accounts.
       </section>
       <section className={styles.card} aria-labelledby="directory-title">
         <div className={styles.toolbar}>
@@ -183,7 +183,7 @@ export function UserDirectory({ initialUsers }: UserDirectoryProps) {
                 Edit access for {selectedUser.name}
               </h2>
               <p className={styles.sectionDescription}>
-                Changes to roles and account status must be recorded by the backend.
+                Role and account-status changes do not take effect from this preview.
               </p>
             </div>
             <button

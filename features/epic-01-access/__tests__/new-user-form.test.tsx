@@ -42,16 +42,16 @@ describe("Administrator account creation", () => {
     expect(push).toHaveBeenCalledWith("/admin/users");
   });
 
-  it("accepts the Iteration 1 six-character temporary-password minimum", async () => {
+  it("accepts the current 12-character temporary-password minimum", async () => {
     render(<NewUserForm existingUsers={[]} />);
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Display name"), "Farah Aziz");
     await user.type(screen.getByLabelText("Email"), "farah@example.org");
-    await user.type(screen.getByLabelText("Temporary password"), "abcdef");
-    await user.type(screen.getByLabelText("Confirm temporary password"), "abcdef");
+    await user.type(screen.getByLabelText("Temporary password"), "reefcare1234");
+    await user.type(screen.getByLabelText("Confirm temporary password"), "reefcare1234");
 
-    expect(screen.getByText("Met: At least 6 characters")).toBeInTheDocument();
+    expect(screen.getByText("Met: At least 12 characters")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create user account" })).toBeEnabled();
   });
 
